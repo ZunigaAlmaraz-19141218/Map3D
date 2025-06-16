@@ -1,4 +1,5 @@
 /* CSS/styles.css */
+
 /* Variables CSS */
 :root {
   --color-primary: #0055A4;
@@ -102,7 +103,7 @@ body {
   cursor: pointer;
 }
 
-/* Form of Information */
+/* Form & List Overlays */
 #infoFormOverlay,
 #infoModalOverlay {
   display: none;
@@ -112,7 +113,56 @@ body {
   background: rgba(0, 0, 0, 0.6);
   z-index: var(--z-overlay);
 }
-#infoForm,
+#infoFormOverlay.active,
+#infoModalOverlay.active {
+  display: block;
+}
+
+/* Info Form Modal */
+#infoForm {
+  display: none;
+  position: fixed;
+  top: clamp(8%, 10vh, 15%);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 8px;
+  padding: clamp(16px, 2vw, 24px);
+  width: clamp(300px, 80%, 600px);
+  max-height: clamp(300px, 80vh, 800px);
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: var(--z-form);
+}
+#infoForm.active {
+  display: block;
+}
+#infoForm label {
+  display: block;
+  margin: clamp(8px, 1vh, 12px) 0 4px;
+  font-weight: bold;
+}
+#infoForm input[type="text"],
+#infoForm textarea,
+#infoForm select {
+  width: 100%;
+  padding: clamp(6px, 1vw, 12px);
+  box-sizing: border-box;
+  margin-bottom: clamp(8px, 1vh, 12px);
+}
+#infoForm textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+#infoForm img.info-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: clamp(8px, 1vh, 12px) 0;
+  border-radius: 4px;
+}
+
+/* Info List Modal */
 #infoListPanel {
   display: none;
   position: fixed;
@@ -128,17 +178,44 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   z-index: var(--z-form);
 }
-#infoForm input[type="text"],
-#infoForm select {
-  width: 100%;
-  padding: clamp(6px, 1vw, 12px);
-  box-sizing: border-box;
-  margin-bottom: clamp(8px, 1vh, 12px);
-}
-#infoForm img {
+#infoListPanel.active {
   display: block;
+}
+
+/* Saved Info List */
+.info-list {
+  padding: 8px 0;
+}
+.info-item {
+  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+}
+.info-item:last-child {
+  border-bottom: none;
+}
+.info-item h3 {
+  margin-bottom: 4px;
+  color: var(--color-primary);
+  font-size: 16px;
+}
+.info-meta {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.info-item p {
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.info-image {
   max-width: 100%;
-  margin: clamp(8px, 1vh, 12px) 0;
+  height: auto;
+  border-radius: 4px;
+  margin-top: 8px;
+  display: block;
 }
 
 /* Steps */
@@ -209,10 +286,10 @@ body {
 }
 
 /* Customize Markers */
-.leaflet-marker-pane {    /* Leaflet marker always on top */
+.leaflet-marker-pane {
   z-index: 650 !important;
 }
-.user-marker {            /* your user icon */
+.user-marker {
   z-index: 660 !important;
 }
 .marker-tree {

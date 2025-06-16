@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENIT Campus Navigation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Routing Machine CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <!-- MapLibre CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" />
+  <!-- Plugins CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+
+  <!-- Nuestro CSS -->
+  <link rel="stylesheet" href="../CSS/styles.css" />
+
+  <style>
+    /* Estilos para el control de pasos */
+    .leaflet-steps {
+      background: white;
+      padding: 8px;
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      max-width: 200px;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <!-- CONTROLES -->
+  <div id="controls" role="region" aria-label="Map controls">
+    <button id="btn2D">2D View</button>
+    <button id="btn3D">3D View</button>
+    <button id="btnStartGPS">Start GPS</button>
+
+    <label for="searchBox">Filter:</label>
+    <input id="searchBox" placeholder="Type to filter…" aria-label="Filter locations" />
+
+    <label for="origin">Start From:</label>
+    <select id="origin" aria-label="Select origin"></select>
+
+    <label for="destination">Go To:</label>
+    <select id="destination" aria-label="Select destination"></select>
+
+    <button id="btnGo">Go</button>
+    <button id="btnAddInfo">Add Information</button>
+    <button id="btnViewInfos">View Information</button>
+  </div>
+
+  <!-- Modal de alertas -->
+  <div id="alertModal" class="modal" role="alertdialog" aria-modal="true">
+    <div class="modal-content">
+      <button id="alert-close" class="modal-close" aria-label="Cerrar">&times;</button>
+      <p id="alert-message"></p>
+    </div>
+  </div>
+
+  <!-- Add Information -->
+  <div id="infoFormOverlay" class="modal"></div>
+  <div id="infoForm" class="modal-content">
+    <div class="modal-header">
+      <h2>Add Information</h2>
+      <button id="btnCancelInfo" class="modal-close" aria-label="Cerrar">&times;</button>
+    </div>
+    <label for="infoTitle">Title:</label>
+    <input type="text" id="infoTitle" placeholder="Title…" />
+    <label for="infoDescription">Description:</label>
+    <input type="text" id="infoDescription" placeholder="Describe the issue…" />
+    <label for="hiddenFileInput">Optional Picture:</label>
+    <input type="file" id="hiddenFileInput" accept="image/*" capture="environment" />
+    <img id="preview" width="300" alt="Preview here" />
+    <label for="infoMarkerType">Marker Type:</label>
+    <select id="infoMarkerType">
+      <option value="tree">Tree</option>
+      <option value="cross">Cross</option>
+    </select>
+    <button id="btnSaveInfo">Save Information</button>
+  </div>
+
+  <!-- Saved Information -->
+  <div id="infoModalOverlay" class="modal"></div>
+  <div id="infoListPanel" class="modal-content">
+    <div class="modal-header">
+      <h2>Saved Information</h2>
+      <button id="btnCloseInfoPanel" class="modal-close" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="infoList"></div>
+  </div>
+
+  <!-- Mapas -->
+  <div id="map2D" role="region" aria-label="Campus Map" style="height:60vh;"></div>
+  <div id="map3D" role="region" aria-label="Campus 3D Map" style="height:60vh; display:none;"></div>
+
+  <!-- Brújula 3D -->
+  <div class="compass-container"><div id="compass" class="compass"></div></div>
+
+  <!-- Panel GPS -->
+  <div id="info" role="status"></div>
+
+  <!-- Scripts externos -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+
+  <!-- Nuestro JS -->
+  <script src="../JS/app.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", initApp);</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Campus Map</title>
+    <style>
+        body {
+            background: #f4f4f9;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+        header {
+            background: #3a3a60;
+            color: #fff;
+            width: 100%;
+            padding: 1.5rem 0;
+            text-align: center;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        main {
+            background: #fff;
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+            margin-top: 2rem;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 1rem 0;
+            font-size: 2.5rem;
+            color: #3a3a60;
+        }
+        p {
+            color: #555;
+            font-size: 1.2rem;
+            margin: 0 0 1.5rem 0;
+        }
+        a.button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #3a3a60;
+            color: #fff;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        a.button:hover {
+            background: #57578a;
+        }
+        @media (max-width: 600px) {
+            main {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Campus Map</header>
+    <main>
+        <h1>Welcome to Campus Map</h1>
+        <p>This is the index page for the Campus Map project.</p>
+        <a href="../Map3D/HTML/Prueba9.html" class="button">Go to Campus Map Page</a>
+    </main>
+</body>
+</html>

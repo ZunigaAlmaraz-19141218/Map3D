@@ -27,15 +27,11 @@ body {
 
 /* Control */
 #controls {
-  display: flex;
-  flex-wrap: wrap;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
   border-bottom: 2px solid var(--color-primary);
   padding: clamp(12px, 2vw, 20px);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: clamp(8px, 1vw, 16px);
 }
@@ -262,15 +258,6 @@ body {
     max-height: 40vh;
     border-radius: 8px 8px 0 0;
   }
-}
-@media (max-width: 480px) {
-  #controls > button,
-  #controls > select,
-  #controls > input {
-    flex: 1 1 100%;
-    min-width: auto;
-  }
-  
 }
 @media (max-width: 480px) {
   #controls {

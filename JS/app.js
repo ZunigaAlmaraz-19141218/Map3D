@@ -56,7 +56,7 @@ function runTests() {
   assert($("infoTitle") && $("infoDescription"), "Inputs info existen");
 }
 
-// Control personalizado para instrucciones de ruta
+// Custom control for route steps
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
@@ -71,18 +71,18 @@ const StepsControl = L.Control.extend({
   }
 });
 
-// Inicialización principal
+// Initialize the application
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
 
-// Configuración de mapas 2D y 3D
+// Initialize 2D and 3D maps
 function initMaps() {
   const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
 
-  // Mapa 2D
+  // 2D map
   map2D = L.map("map2D", {
     center: [43.22476,0.05044],
     zoom: 18,
@@ -104,8 +104,10 @@ function initMaps() {
     secondaryAreaUnit: 'hectares'
   }).addTo(map2D);
 
+  // Disable auto-follow when user drags or zooms
   map2D.on('dragstart zoomstart', () => following = false);
 
+  // Add POIs cluster
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key, coords]) => {
     const m = L.marker(coords).bindPopup(key.replace(/_/g,' '));
@@ -114,7 +116,7 @@ function initMaps() {
   });
   map2D.addLayer(cluster);
 
-  // Mapa 3D
+  // 3D map
   map3D = new maplibregl.Map({
     container: "map3D",
     style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
@@ -161,13 +163,13 @@ function initMaps() {
   switchTo2D();
 }
 
-// Manejo de clics en POIs
+// Handle POI clicks
 function handlePOIClick(key) {
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
 
-// Inicialización de controles y formularios
+// Initialize controls + forms
 function initControls() {
   fillSelect("origin");
   fillSelect("destination");
@@ -195,10 +197,14 @@ function initControls() {
     }
   };
 
-  // Modales de info
-  $("btnAddInfo").onclick       = () => { $("infoFormOverlay").style.display='flex'; $("infoForm").style.display='block'; };
-  $("btnCancelInfo").onclick    = () => { $("infoFormOverlay").style.display='none'; $("infoForm").style.display='none'; };
-  $("hiddenFileInput").onchange  = () => {
+  // Alert modal
+  $("alert-close").onclick = () => $("alertModal").style.display = 'none';
+
+  // Info form modal
+  $("btnAddInfo").onclick    = () => { $("infoFormOverlay").style.display='flex'; $("infoForm").style.display='block'; };
+  $("btnCancelInfo").onclick = () => { $("infoFormOverlay").style.display='none'; $("infoForm").style.display='none'; };
+
+  $("hiddenFileInput").onchange = () => {
     const f = $("hiddenFileInput").files[0];
     if (f) {
       const r = new FileReader();
@@ -206,9 +212,9 @@ function initControls() {
       r.readAsDataURL(f);
     }
   };
-  $("btnSaveInfo").onclick      = saveInfo;
-  $("btnViewInfos").onclick     = () => { $("infoModalOverlay").style.display='flex'; $("infoListPanel").style.display='block'; refreshInfoList(); };
-  $("btnCloseInfoPanel").onclick= () => { $("infoModalOverlay").style.display='none'; $("infoListPanel").style.display='none'; };
+  $("btnSaveInfo").onclick  = saveInfo;
+  $("btnViewInfos").onclick = () => { $("infoModalOverlay").style.display='flex'; $("infoListPanel").style.display='block'; refreshInfoList(); };
+  $("btnCloseInfoPanel").onclick = () => { $("infoModalOverlay").style.display='none'; $("infoListPanel").style.display='none'; };
   $("infoModalOverlay").onclick = e => {
     if (e.target === $("infoModalOverlay")) {
       $("infoModalOverlay").style.display='none';
@@ -216,17 +222,17 @@ function initControls() {
     }
   };
 
-  // IndexedDB para marcadores de info
-  const req = indexedDB.open("CampusAppDB",1);
-  req.onerror     = e => console.error("DB error", e);
-  req.onsuccess   = e => { db = e.target.result; loadAllMarkers(); };
+  // IndexedDB setup
+  const req = indexedDB.open("CampusAppDB", 1);
+  req.onerror = e => console.error("DB error", e);
+  req.onsuccess = e => { db = e.target.result; loadAllMarkers(); };
   req.onupgradeneeded = e => {
     const store = e.target.result.createObjectStore("infos", { keyPath: "id", autoIncrement: true });
-    store.createIndex("by_date","timestamp");
+    store.createIndex("by_date", "timestamp");
   };
 }
 
-// Rellena los <select> de origin/destination
+// Fill origin/destination selects
 function fillSelect(id) {
   const sel = $(id);
   sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
@@ -240,24 +246,24 @@ function fillSelect(id) {
   for (const label in groups) {
     const og = document.createElement("optgroup");
     og.label = label;
-    groups[label].forEach(key=>{
+    groups[label].forEach(key => {
       const o = document.createElement("option");
       o.value = key;
-      o.textContent = key.replace(/_/g," ");
+      o.textContent = key.replace(/_/g, " ");
       og.appendChild(o);
     });
     sel.appendChild(og);
   }
 }
 
-// Dibuja la ruta en 2D y la sincroniza en 3D
+// Draw route in 2D and sync to 3D
 function drawRoute() {
   const o = $("origin").value, d = $("destination").value;
   if (!o) return showModal("Select origin");
   if (!d) return showModal("Select destination");
   if (routingControl) map2D.removeControl(routingControl);
 
-  const origin = o==="gps"
+  const origin = o === "gps"
     ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
     : L.latLng(...locations[o]);
   if (!origin) return;
@@ -265,75 +271,72 @@ function drawRoute() {
 
   routingControl = L.Routing.control({
     router: L.Routing.osrmv1({
-      serviceUrl:"https://routing.openstreetmap.de/routed-foot/route/v1",
-      profile:"foot"
+      serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1",
+      profile: "foot"
     }),
-    waypoints:[origin,dest],
-    fitSelectedRoutes:true,
-    show:false,
-    createMarker:()=>null,
-    lineOptions:{styles:[{weight:5,color:"#0055A4"}]}
+    waypoints: [origin, dest],
+    fitSelectedRoutes: true,
+    show: false,
+    createMarker: () => null,
+    lineOptions: { styles: [{ weight: 5, color: "#0055A4" }] }
   })
-  .on("routesfound", e=>{
+  .on("routesfound", e => {
     const r = e.routes[0];
     instructions = r.instructions.slice();
     if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
     window._stepsCtrl = new StepsControl();
     map2D.addControl(window._stepsCtrl);
-    syncRouteTo3D(r.coordinates.map(c=>[c.lng,c.lat]));
+    syncRouteTo3D(r.coordinates.map(c => [c.lng, c.lat]));
   })
-  .on("routingerror", ()=> showModal("Routing error"))
+  .on("routingerror", () => showModal("Routing error"))
   .addTo(map2D);
 }
 
 function syncRouteTo3D(coords) {
-  const data = { type:"Feature", geometry:{ type:"LineString", coordinates:coords } };
+  const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
   if (map3D.getSource("route3D")) {
     map3D.getSource("route3D").setData(data);
   } else {
-    map3D.addSource("route3D", { type:"geojson", data });
+    map3D.addSource("route3D", { type: "geojson", data });
     map3D.addLayer({
-      id:"route3D-layer", type:"line", source:"route3D",
-      paint:{ "line-color":"#FFD700", "line-width":5 }
+      id: "route3D-layer", type: "line", source: "route3D",
+      paint: { "line-color": "#FFD700", "line-width": 5 }
     });
   }
 }
 
-// Manejo de posición GPS
+// Handle incoming GPS position
 function handlePosition(p) {
-  const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc,heading} = p.coords;
-  if (accuracy>100) return;
-  if (first){
-    smoothLat=lat; smoothLon=lon; first=false;
-    if (acc<5) baseAlt=alt;
+  const { latitude: lat, longitude: lon, accuracy, altitude: alt, altitudeAccuracy: acc, heading } = p.coords;
+  if (accuracy > 100) return;
+
+  if (first) {
+    smoothLat = lat; smoothLon = lon; first = false;
+    if (acc < 5) baseAlt = alt;
   } else {
-    const α=0.4;
-    smoothLat = smoothLat*(1-α) + lat*α;
-    smoothLon = smoothLon*(1-α) + lon*α;
+    const α = 0.4;
+    smoothLat = smoothLat * (1 - α) + lat * α;
+    smoothLon = smoothLon * (1 - α) + lon * α;
   }
   if (++frameCnt % 3 !== 0) return;
 
-  const pos2D=[smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
+  const pos2D = [smoothLat, smoothLon],
+        pos3D = [smoothLon, smoothLat];
 
-  // Actualiza marcador 2D
-  if (getComputedStyle($("map2D")).display!=="none") {
+  // Update 2D marker with default icon
+  if (getComputedStyle($("map2D")).display !== "none") {
     if (!userMarker2D) {
-  // icono por defecto de Leaflet, con el pin azul estándar
-  userMarker2D = L.marker(pos2D).addTo(map2D);
-} else {
-  userMarker2D.setLatLng(pos2D);
-      if (heading!=null){
-        userMarker2D.getElement().querySelector(".arrow")
-          .style.transform = `translateX(-50%) rotate(${heading}deg)`;
-      }
+      userMarker2D = L.marker(pos2D).addTo(map2D);
+    } else {
+      userMarker2D.setLatLng(pos2D);
     }
-    if (following) map2D.panTo(pos2D);
+    if (following) map2D.panTo(pos2D, { animate: true });
     highlightStep();
   }
 
-  // Actualiza marcador 3D
-  if (getComputedStyle($("map3D")).display!=="none") {
-    if (!userMarker3D){
+  // Update 3D marker
+  if (getComputedStyle($("map3D")).display !== "none") {
+    if (!userMarker3D) {
       userMarker3D = new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
     } else {
       userMarker3D.setLngLat(pos3D);
@@ -341,141 +344,145 @@ function handlePosition(p) {
     if (following) map3D.setCenter(pos3D);
   }
 
-  // Panel de info
-  let floor="Unknown";
-  if (baseAlt!=null && acc<5){
+  // Info panel
+  let floor = "Unknown";
+  if (baseAlt != null && acc < 5) {
     const d = alt - baseAlt;
-    floor = d<2?"Ground":d<4?"First":"Upper";
+    floor = d < 2 ? "Ground" : d < 4 ? "First" : "Upper";
   }
-  $("info").innerHTML=`
+  $("info").innerHTML = `
     <p>
       <strong>Lat:</strong> ${smoothLat.toFixed(6)}<br>
       <strong>Lon:</strong> ${smoothLon.toFixed(6)}<br>
-      <strong>Alt:</strong> ${alt!=null?alt.toFixed(1)+" m":"—"}<br>
+      <strong>Alt:</strong> ${alt != null ? alt.toFixed(1) + " m" : "—"}<br>
       <strong>Acc:</strong> ±${accuracy.toFixed(1)} m<br>
       <strong>Floor:</strong> ${floor}
     </p>`;
 }
 
-function startTracking(){
-  first=true; frameCnt=0;
+function startTracking() {
+  first = true; frameCnt = 0;
   if (watchId) navigator.geolocation.clearWatch(watchId);
   navigator.geolocation.getCurrentPosition(handlePosition, ()=>{}, {
-    enableHighAccuracy:true, timeout:5000, maximumAge:0
+    enableHighAccuracy: true, timeout: 5000, maximumAge: 0
   });
   watchId = navigator.geolocation.watchPosition(
     handlePosition,
     err => showModal(`GPS error: ${err.message}`),
-    { enableHighAccuracy:true, timeout:5000, maximumAge:0 }
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
   );
 }
 
-// Resalta paso actual en instrucciones
-function highlightStep(){
+// Highlight current step
+function highlightStep() {
   if (!userMarker2D || !instructions.length) return;
-  const pt = turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
-  let best=0, bd=Infinity;
-  instructions.forEach((inst,i)=>{
+  const pt = turf.point([userMarker2D.getLatLng().lng, userMarker2D.getLatLng().lat]);
+  let best = 0, bd = Infinity;
+  instructions.forEach((inst, i) => {
     if (!inst.latLng) return;
-    const d = turf.distance(pt, turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
-    if (d<bd){bd=d;best=i;}
+    const d = turf.distance(pt, turf.point([inst.latLng.lng, inst.latLng.lat]), { units: "meters" });
+    if (d < bd) { bd = d; best = i; }
   });
-  instructions.forEach((_,i)=>{
-    const el=document.getElementById(`step-${i}`);
-    if (el) el.classList.toggle("current", i===best);
+  instructions.forEach((_, i) => {
+    const el = document.getElementById(`step-${i}`);
+    if (el) el.classList.toggle("current", i === best);
   });
 }
 
-// Cambiar entre vistas 2D y 3D
-function switchTo2D(){
-  $("map3D").style.display="none";
-  $("map2D").style.display="block";
+// Switch between 2D/3D
+function switchTo2D() {
+  $("map3D").style.display = "none";
+  $("map2D").style.display = "block";
   map2D.invalidateSize();
 }
-function switchTo3D(){
-  $("map2D").style.display="none";
-  $("map3D").style.display="block";
+function switchTo3D() {
+  $("map2D").style.display = "none";
+  $("map3D").style.display = "block";
   map3D.resize();
 }
 
-// IndexedDB: cargar y mostrar marcadores de info
-function loadAllMarkers(){
-  const tx=db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess=e=>{
-    infoMarkers.forEach(m=>m.remove());
-    infoMarkers=[];
+// IndexedDB: load & display info markers
+function loadAllMarkers() {
+  const tx = db.transaction("infos", "readonly");
+  tx.objectStore("infos").getAll().onsuccess = e => {
+    infoMarkers.forEach(m => m.remove());
+    infoMarkers = [];
     e.target.result.forEach(addMarkerToMap);
   };
 }
-function addMarkerToMap(info){
-  const el=document.createElement("div");
-  el.className="info-marker";
-  const m=new maplibregl.Marker(el)
-    .setLngLat([info.lng,info.lat])
-    .setPopup(new maplibregl.Popup({offset:25})
+function addMarkerToMap(info) {
+  const lng = parseFloat(info.lng),
+        lat = parseFloat(info.lat);
+  if (isNaN(lng) || isNaN(lat)) {
+    console.warn('Invalid coords, skipping marker:', info);
+    return;
+  }
+  const el = document.createElement("div");
+  el.className = "info-marker";
+  new maplibregl.Marker(el)
+    .setLngLat([lng, lat])
+    .setPopup(new maplibregl.Popup({ offset: 25 })
       .setHTML(`
         <h3>${info.title}</h3>
         <p>${info.description}</p>
-        ${info.image?`<img src="${info.image}" alt="${info.title}"/>`:''}
+        ${info.image ? `<img src="${info.image}" alt="${info.title}"/>` : ''}
       `))
     .addTo(map3D);
-  infoMarkers.push(m);
 }
-function saveInfo(){
-  const title=$("infoTitle").value.trim();
-  const description=$("infoDescription").value.trim();
-  if (!title||!description) return alert("Rellena título y descripción.");
-  const image=$("preview").src||null;
-  const center=map3D.getCenter();
-  const tx=db.transaction("infos","readwrite");
+function saveInfo() {
+  const title = $("infoTitle").value.trim(),
+        description = $("infoDescription").value.trim();
+  if (!title || !description) return alert("Rellena título y descripción.");
+  const image  = $("preview").src || null,
+        center = map3D.getCenter(),
+        lng    = center.lng,
+        lat    = center.lat,
+        tx     = db.transaction("infos", "readwrite");
   tx.objectStore("infos").add({
-    title,description,image,
-    lng:center.lng,lat:center.lat,
-    timestamp:Date.now()
-  }).onsuccess=()=>{
-    $("infoFormOverlay").style.display='none';
-    $("infoForm").style.display='none';
-    $("infoTitle").value='';
-    $("infoDescription").value='';
-    $("preview").src='';
+    title, description, image, lng, lat, timestamp: Date.now()
+  }).onsuccess = () => {
+    $("infoFormOverlay").style.display = 'none';
+    $("infoForm").style.display = 'none';
+    $("infoTitle").value = '';
+    $("infoDescription").value = '';
+    $("preview").src = '';
     loadAllMarkers();
   };
 }
-function refreshInfoList(){
-  const tx=db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess=e=>{
-    const list=$("infoList");
-    list.innerHTML=e.target.result.map(info=>`
+function refreshInfoList() {
+  const tx = db.transaction("infos", "readonly");
+  tx.objectStore("infos").getAll().onsuccess = e => {
+    const list = $("infoList");
+    list.innerHTML = e.target.result.map(info => `
       <li>
         <strong>${info.title}</strong><br>
         ${info.description}
-        ${info.image?`<br><img src="${info.image}" class="thumb">`:''}
+        ${info.image ? `<br><img src="${info.image}" class="thumb">` : ''}
         <button data-id="${info.id}" class="delete-info">Delete</button>
       </li>
     `).join('');
-    list.querySelectorAll(".delete-info").forEach(btn=>{
-      btn.onclick=()=>{
-        const id=Number(btn.dataset.id);
+    list.querySelectorAll(".delete-info").forEach(btn => {
+      btn.onclick = () => {
+        const id = Number(btn.dataset.id);
         db.transaction("infos","readwrite").objectStore("infos").delete(id)
-          .onsuccess=refreshInfoList;
+          .onsuccess = refreshInfoList;
       };
     });
   };
 }
 
-// Utilidades
-function debounce(fn, delay=100){
+// Utilities
+function debounce(fn, delay=100) {
   let t;
-  return (...args)=>{
+  return (...args) => {
     clearTimeout(t);
-    t=setTimeout(()=>fn(...args), delay);
+    t = setTimeout(() => fn(...args), delay);
   };
 }
-function showModal(msg){
-  $("alert-message").textContent=msg;
-  $("alertModal").style.display='flex';
+function showModal(msg) {
+  $("alert-message").textContent = msg;
+  $("alertModal").style.display = 'flex';
 }
-$("alert-close").onclick = ()=> $("alertModal").style.display='none';
 
-// Arrancar la app
+// Launch
 document.addEventListener("DOMContentLoaded", initApp);

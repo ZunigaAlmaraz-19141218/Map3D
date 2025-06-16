@@ -263,15 +263,12 @@ body {
   #controls {
     padding: clamp(8px, 1vw, 12px);
   }
-  #controls > button,
-#controls > select,
-#controls > input {
-  flex: 1 1 45%;      /* dos elementos por línea aprox */
-  min-width: 100px;
-  margin: 2px;
-  font-size: 14px;
-  line-height: 1.2;
-}
+  #controls input,
+  #controls select,
+  #controls button {
+    font-size: clamp(10px, 1.2vw, 14px);
+    padding: clamp(4px, 0.5vw, 8px);
+  }
   #map2D,
   #map3D {
     height: clamp(200px, 50vh, 400px);

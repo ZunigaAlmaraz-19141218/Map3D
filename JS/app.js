@@ -1,6 +1,6 @@
 // app.js
 
-// Data of Campus & POIs
+// Datos de Campus & POIs
 const locations = {
   Entrance:      [43.225018, 0.052059],
   Library:       [43.224945, 0.051151],
@@ -16,13 +16,13 @@ const locations = {
   Building_K:    [43.226481, 0.050634],
   Building_M:    [43.223988, 0.050028],
   Building_IUFM: [43.224808, 0.049464],
-  Observatoire_Midi_Pyrenees:  [43.223953, 0.049200],
-  Département_Génie_Électrique_et_InformatiqueIndustrielle: [43.225952, 0.048409],
-  Département_Techniques_de_Commercialisation: [43.226238, 0.049283],
-  Département_Génie_Mécanique_et_Productique: [43.226579, 0.047749],
-  Département_Gestion_des_Entreprises_et_des_Administrations: [43.226727, 0.049311],
-  Département_Métiers_du_Multimédia_et_de_lInternet: [43.227101, 0.049143],
-  Département_Génie_Civil_Construction_Durable: [43.226198, 0.047592],
+  Observatoire:  [43.223953, 0.049200],
+  Département_Génie_Électrique: [43.225952, 0.048409],
+  Département_Techniques:       [43.226238, 0.049283],
+  Département_Génie_Mécanique:  [43.226579, 0.047749],
+  Département_Gestion:          [43.226727, 0.049311],
+  Département_Multimédia:       [43.227101, 0.049143],
+  Département_Civil:            [43.226198, 0.047592],
   Résidence_A:   [43.227188, 0.051380],
   Résidence_B:   [43.226901, 0.051519],
   Résidence_C:   [43.226672, 0.051519],
@@ -47,38 +47,44 @@ let db, infoMarkers = [];
 const $ = id => document.getElementById(id);
 
 // Simple tests
-function assert(cond, msg) { if (!cond) throw new Error(msg); }
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg);
+}
 function runTests() {
   assert($("origin"), "Falta #origin");
   assert($("destination"), "Falta #destination");
   assert($("infoTitle") && $("infoDescription"), "Faltan inputs de info");
 }
 
-// Leaflet steps control (se queda igual)
+// Steps Control
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
     const div = L.DomUtil.create('div', 'leaflet-steps');
     div.innerHTML = `
-      <h4>Steps (${instructions.length})</h4>
-      <ol>${instructions.map((inst,i)=>
-        `<li id="step-${i}">${inst.text}</li>`
-      ).join('')}</ol>`;
+      <h3>Steps (${instructions.length})</h3>
+      <ol>
+        ${instructions.map((inst,i)=>
+          `<li id="step-${i}">${inst.text}</li>`
+        ).join('')}
+      </ol>`;
     L.DomEvent.disableClickPropagation(div);
     return div;
   }
 });
 
+// Inicialización
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
 
+// Mapas
 function initMaps() {
   const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
 
-  // 2D map
+  // 2D
   map2D = L.map("map2D", {
     center:[43.22476,0.05044],
     zoom:18, minZoom:17, maxZoom:19, maxBounds:campusBounds
@@ -90,23 +96,23 @@ function initMaps() {
     {toggleDisplay:true}
   ).addTo(map2D);
   L.control.measure({
-    position:'topright', primaryLengthUnit:'meters',
-    secondaryLengthUnit:'kilometers', primaryAreaUnit:'sqmeters',
-    secondaryAreaUnit:'hectares'
+    position:'topright',
+    primaryLengthUnit:'meters', secondaryLengthUnit:'kilometers',
+    primaryAreaUnit:'sqmeters', secondaryAreaUnit:'hectares'
   }).addTo(map2D);
 
   map2D.on('dragstart zoomstart', ()=> following=false);
 
-  // POIs cluster
+  // POIs
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key,coords])=>{
     const m = L.marker(coords).bindPopup(key.replace(/_/g,' '));
-    m.on('click',()=>handlePOIClick(key));
+    m.on('click',()=> handlePOIClick(key));
     cluster.addLayer(m);
   });
   map2D.addLayer(cluster);
 
-  // 3D map
+  // 3D
   map3D = new maplibregl.Map({
     container:"map3D",
     style:"https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
@@ -126,7 +132,12 @@ function initMaps() {
     }});
     map3D.addLayer({
       id:'pois-layer', type:'circle', source:'pois',
-      paint:{'circle-radius':6,'circle-color':'#0055A4','circle-stroke-color':'#fff','circle-stroke-width':2}
+      paint:{
+        'circle-radius':6,
+        'circle-color':'#0055A4',
+        'circle-stroke-color':'#fff',
+        'circle-stroke-width':2
+      }
     });
     map3D.on('click','pois-layer', e=>{
       const name=e.features[0].properties.name;
@@ -141,11 +152,13 @@ function initMaps() {
   switchTo2D();
 }
 
+// Click en POI
 function handlePOIClick(key){
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
 
+// Controles
 function initControls(){
   fillSelect("origin");
   fillSelect("destination");
@@ -157,7 +170,7 @@ function initControls(){
         o.style.display = o.text.toLowerCase().includes(txt)?'block':'none';
       });
     });
-  }));
+  },100));
 
   $("btnGo").onclick       = drawRoute;
   $("btn2D").onclick       = switchTo2D;
@@ -171,29 +184,22 @@ function initControls(){
       map3D.setCenter(userMarker3D.getLngLat().toArray());
   };
 
-  // Alert modal
-  $("alert-close").onclick = ()=> $("alertModal").classList.remove("active");
-
-  // Add Info modal
-  $("btnAddInfo").onclick    = ()=>{$("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active");};
-  $("btnCancelInfo").onclick = ()=>{$("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active");};
-  $("hiddenFileInput").onchange = ()=>{
+  // Modals
+  $("alert-close").onclick          = ()=> $("alertModal").classList.remove("active");
+  $("btnAddInfo").onclick           = ()=>{$("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active");};
+  $("btnCancelInfo").onclick        = ()=>{$("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active");};
+  $("hiddenFileInput").onchange     = ()=>{
     const f=$("hiddenFileInput").files[0];
-    if(f){ const r=new FileReader(); r.onload=e=>$("preview").src=e.target.result; r.readAsDataURL(f); }
+    if(f){
+      const r=new FileReader();
+      r.onload=e=>$("preview").src=e.target.result;
+      r.readAsDataURL(f);
+    }
   };
-  $("btnSaveInfo").onclick = saveInfo;
-
-  // View Info modal
-  $("btnViewInfos").onclick = ()=>{
-    $("infoModalOverlay").classList.add("active");
-    $("infoListPanel").classList.add("active");
-    refreshInfoList();
-  };
-  $("btnCloseInfoPanel").onclick = ()=>{
-    $("infoModalOverlay").classList.remove("active");
-    $("infoListPanel").classList.remove("active");
-  };
-  $("infoModalOverlay").onclick = e=>{
+  $("btnSaveInfo").onclick          = saveInfo;
+  $("btnViewInfos").onclick         = ()=>{ $("infoModalOverlay").classList.add("active"); $("infoListPanel").classList.add("active"); refreshInfoList(); };
+  $("btnCloseInfoPanel").onclick    = ()=>{ $("infoModalOverlay").classList.remove("active"); $("infoListPanel").classList.remove("active"); };
+  $("infoModalOverlay").onclick     = e=>{
     if(e.target=== $("infoModalOverlay")){
       $("infoModalOverlay").classList.remove("active");
       $("infoListPanel").classList.remove("active");
@@ -208,8 +214,12 @@ function initControls(){
     const store=e.target.result.createObjectStore("infos",{keyPath:"id",autoIncrement:true});
     store.createIndex("by_date","timestamp");
   };
+
+  // Ajuste dinámico del panel de pasos
+  window.addEventListener('resize', adjustDirectionsPosition);
 }
 
+// Rellena selects
 function fillSelect(id){
   const sel=$(id);
   sel.innerHTML=`<option value="">— select —</option><option value="gps">My Location</option>`;
@@ -233,6 +243,7 @@ function fillSelect(id){
   }
 }
 
+// Dibuja ruta
 function drawRoute(){
   const o=$("origin").value, d=$("destination").value;
   if(!o) return showModal("Select origin");
@@ -240,10 +251,10 @@ function drawRoute(){
   if(routingControl) map2D.removeControl(routingControl);
 
   const origin = o==="gps"
-    ? (userMarker2D?userMarker2D.getLatLng():(showModal("Start GPS first"),null))
+    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"),null))
     : L.latLng(...locations[o]);
   if(!origin) return;
-  const dest=L.latLng(...locations[d]);
+  const dest = L.latLng(...locations[d]);
 
   routingControl = L.Routing.control({
     router:L.Routing.osrmv1({
@@ -256,18 +267,30 @@ function drawRoute(){
     createMarker:()=>null,
     lineOptions:{styles:[{weight:5,color:"#0055A4"}]}
   })
-  .on("routesfound",e=>{
-    const r=e.routes[0];
-    instructions=r.instructions.slice();
+  .on("routesfound", e=>{
+    instructions = e.routes[0].instructions.slice();
     if(window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
-    window._stepsCtrl=new StepsControl();
+    window._stepsCtrl = new StepsControl();
     map2D.addControl(window._stepsCtrl);
-    syncRouteTo3D(r.coordinates.map(c=>[c.lng,c.lat]));
+    adjustDirectionsPosition();
+    syncRouteTo3D(e.routes[0].coordinates.map(c=>[c.lng,c.lat]));
   })
-  .on("routingerror",()=>showModal("Routing error"))
+  .on("routingerror", ()=> showModal("Routing error"))
   .addTo(map2D);
 }
 
+// Ajusta posición del panel
+function adjustDirectionsPosition(){
+  const dir = document.querySelector('.leaflet-steps');
+  if(!dir) return;
+  const ctrl = document.getElementById('controls');
+  const ctrlRect = ctrl.getBoundingClientRect();
+  const mapRect  = document.getElementById('map2D').getBoundingClientRect();
+  dir.style.top   = (ctrlRect.bottom - mapRect.top + 10) + 'px';
+  dir.style.right = '10px';
+}
+
+// Sincroniza ruta 3D
 function syncRouteTo3D(coords){
   const data={type:"Feature",geometry:{type:"LineString",coordinates:coords}};
   if(map3D.getSource("route3D")){
@@ -281,31 +304,29 @@ function syncRouteTo3D(coords){
   }
 }
 
+// Geolocalización
 function handlePosition(p){
-  const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc,heading} = p.coords;
+  const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc} = p.coords;
   if(accuracy>100) return;
   if(first){ smoothLat=lat; smoothLon=lon; first=false; if(acc<5) baseAlt=alt; }
   else { const α=0.4; smoothLat=smoothLat*(1-α)+lat*α; smoothLon=smoothLon*(1-α)+lon*α; }
   if(++frameCnt%3!==0) return;
 
-  const pos2D=[smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
+  const pos2D = [smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
 
-  // 2D user-marker
   if(getComputedStyle($("map2D")).display!=="none"){
     if(!userMarker2D) userMarker2D=L.marker(pos2D).addTo(map2D);
-    else userMarker2D.setLatLng(pos2D);
-    if(following) map2D.panTo(pos2D,{animate:true});
+    else             userMarker2D.setLatLng(pos2D);
+    if(following)    map2D.panTo(pos2D,{animate:true});
     highlightStep();
   }
 
-  // 3D user-marker
   if(getComputedStyle($("map3D")).display!=="none"){
     if(!userMarker3D) userMarker3D=new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
-    else userMarker3D.setLngLat(pos3D);
-    if(following) map3D.setCenter(pos3D);
+    else              userMarker3D.setLngLat(pos3D);
+    if(following)     map3D.setCenter(pos3D);
   }
 
-  // GPS info panel (amarillo)
   let floor="Unknown";
   if(baseAlt!=null && acc<5){
     const d=alt-baseAlt;
@@ -327,7 +348,7 @@ function startTracking(){
   navigator.geolocation.getCurrentPosition(handlePosition,()=>{},{
     enableHighAccuracy:true, timeout:5000, maximumAge:0
   });
-  watchId=navigator.geolocation.watchPosition(
+  watchId = navigator.geolocation.watchPosition(
     handlePosition,
     err=>showModal(`GPS error: ${err.message}`),
     { enableHighAccuracy:true, timeout:5000, maximumAge:0 }
@@ -335,17 +356,17 @@ function startTracking(){
 }
 
 function highlightStep(){
-  if(!userMarker2D||!instructions.length) return;
-  const pt=turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
-  let best=0,bd=Infinity;
+  if(!userMarker2D || !instructions.length) return;
+  const pt = turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
+  let best=0, bd=Infinity;
   instructions.forEach((inst,i)=>{
     if(!inst.latLng) return;
-    const d=turf.distance(pt,turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
-    if(d<bd){bd=d;best=i;}
+    const d = turf.distance(pt,turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
+    if(d<bd){ bd=d; best=i; }
   });
   instructions.forEach((_,i)=>{
-    const el=document.getElementById(`step-${i}`);
-    if(el) el.classList.toggle("current",i===best);
+    const el = document.getElementById(`step-${i}`);
+    if(el) el.classList.toggle("current", i===best);
   });
 }
 

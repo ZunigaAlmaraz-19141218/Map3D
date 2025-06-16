@@ -27,11 +27,15 @@ body {
 
 /* Control */
 #controls {
-  background: #fff;
-  border-bottom: 2px solid var(--color-primary);
-  padding: clamp(12px, 2vw, 20px);
   display: flex;
   flex-wrap: wrap;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 2px solid var(--color-primary);
+  padding: clamp(12px, 2vw, 20px);
   align-items: center;
   gap: clamp(8px, 1vw, 16px);
 }
@@ -260,15 +264,27 @@ body {
   }
 }
 @media (max-width: 480px) {
+  #controls > button,
+  #controls > select,
+  #controls > input {
+    flex: 1 1 100%;
+    min-width: auto;
+  }
+  
+}
+@media (max-width: 480px) {
   #controls {
     padding: clamp(8px, 1vw, 12px);
   }
-  #controls input,
-  #controls select,
-  #controls button {
-    font-size: clamp(10px, 1.2vw, 14px);
-    padding: clamp(4px, 0.5vw, 8px);
-  }
+  #controls > button,
+#controls > select,
+#controls > input {
+  flex: 1 1 45%;      /* dos elementos por línea aprox */
+  min-width: 100px;
+  margin: 2px;
+  font-size: 14px;
+  line-height: 1.2;
+}
   #map2D,
   #map3D {
     height: clamp(200px, 50vh, 400px);

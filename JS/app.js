@@ -317,14 +317,11 @@ function handlePosition(p) {
 
   // Actualiza marcador 2D
   if (getComputedStyle($("map2D")).display!=="none") {
-    if (!userMarker2D){
-      userMarker2D = L.marker(pos2D,{ icon: L.divIcon({
-        className: "user-marker",
-        html:'<div class="inner"></div><div class="arrow"></div>',
-        iconSize:[24,24], iconAnchor:[12,12]
-      })}).addTo(map2D);
-    } else {
-      userMarker2D.setLatLng(pos2D);
+    if (!userMarker2D) {
+  // icono por defecto de Leaflet, con el pin azul estándar
+  userMarker2D = L.marker(pos2D).addTo(map2D);
+} else {
+  userMarker2D.setLatLng(pos2D);
       if (heading!=null){
         userMarker2D.getElement().querySelector(".arrow")
           .style.transform = `translateX(-50%) rotate(${heading}deg)`;

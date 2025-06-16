@@ -16,7 +16,7 @@
 
 /* Reset & base */
 * {
-  margin: 0;
+  /* margin: 0; */
   padding: 0;
   box-sizing: border-box;
 }
@@ -86,7 +86,7 @@ body {
 }
 .modal-content {
   background: #fff;
-  padding: clamp(16px, 2vw, 24px);
+  /* padding: clamp(16px, 2vw, 24px); */
   border-radius: 8px;
   max-width: clamp(280px, 80%, 400px);
   width: 100%;

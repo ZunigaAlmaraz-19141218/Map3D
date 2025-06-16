@@ -36,27 +36,25 @@ const locations = {
   Laboratory_L4: [43.226383, 0.050033]
 };
 
-// Global variables
+// Globals
 let map2D, map3D, routingControl, instructions = [];
 let userMarker2D = null, userMarker3D = null;
 let watchId = null, following = true;
 let smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
 let db, infoMarkers = [];
 
-// Shortcut for document.getElementById
+// Shortcut
 const $ = id => document.getElementById(id);
 
-// Basic assertions
-function assert(cond, msg) {
-  if (!cond) throw new Error("Test failed: " + msg);
-}
+// Simple tests
+function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function runTests() {
-  assert($("origin"), "Debe existir #origin");
-  assert($("destination"), "Debe existir #destination");
-  assert($("infoTitle") && $("infoDescription"), "Inputs info existen");
+  assert($("origin"), "Falta #origin");
+  assert($("destination"), "Falta #destination");
+  assert($("infoTitle") && $("infoDescription"), "Faltan inputs de info");
 }
 
-// Custom control for route steps
+// Leaflet steps control (se queda igual)
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
@@ -71,80 +69,67 @@ const StepsControl = L.Control.extend({
   }
 });
 
-// Initialize app
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
 
-// Initialize 2D & 3D maps
 function initMaps() {
   const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
 
-  // 2D
+  // 2D map
   map2D = L.map("map2D", {
-    center: [43.22476,0.05044],
-    zoom: 18,
-    minZoom: 17, maxZoom: 19,
-    maxBounds: campusBounds
+    center:[43.22476,0.05044],
+    zoom:18, minZoom:17, maxZoom:19, maxBounds:campusBounds
   });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map2D);
-  L.control.scale({ imperial: false }).addTo(map2D);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map2D);
+  L.control.scale({imperial:false}).addTo(map2D);
   new L.Control.MiniMap(
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), { toggleDisplay: true }
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    {toggleDisplay:true}
   ).addTo(map2D);
   L.control.measure({
-    position: 'topright',
-    primaryLengthUnit: 'meters',
-    secondaryLengthUnit: 'kilometers',
-    primaryAreaUnit: 'sqmeters',
-    secondaryAreaUnit: 'hectares'
+    position:'topright', primaryLengthUnit:'meters',
+    secondaryLengthUnit:'kilometers', primaryAreaUnit:'sqmeters',
+    secondaryAreaUnit:'hectares'
   }).addTo(map2D);
-  map2D.on('dragstart zoomstart', () => following = false);
+
+  map2D.on('dragstart zoomstart', ()=> following=false);
 
   // POIs cluster
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key,coords])=>{
     const m = L.marker(coords).bindPopup(key.replace(/_/g,' '));
-    m.on('click', ()=> handlePOIClick(key));
+    m.on('click',()=>handlePOIClick(key));
     cluster.addLayer(m);
   });
   map2D.addLayer(cluster);
 
-  // 3D
+  // 3D map
   map3D = new maplibregl.Map({
-    container: "map3D",
-    style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
-    center: [0.05044,43.22476], zoom: 17,
-    pitch: 60, bearing: -20, antialias: true
+    container:"map3D",
+    style:"https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
+    center:[0.05044,43.22476], zoom:17, pitch:60, bearing:-20, antialias:true
   });
   map3D.addControl(new maplibregl.NavigationControl());
-  map3D.on('dragstart zoomstart', () => following = false);
+  map3D.on('dragstart zoomstart', ()=> following=false);
 
   map3D.on('load', ()=>{
-    map3D.addSource('pois',{
-      type:'geojson',
-      data:{
-        type:'FeatureCollection',
-        features:Object.entries(locations).map(([k,c])=>({
-          type:'Feature',
-          geometry:{ type:'Point', coordinates:[c[1],c[0]] },
-          properties:{ name:k }
-        }))
-      }
-    });
+    map3D.addSource('pois',{type:'geojson', data:{
+      type:'FeatureCollection',
+      features:Object.entries(locations).map(([k,c])=>({
+        type:'Feature',
+        geometry:{type:'Point',coordinates:[c[1],c[0]]},
+        properties:{name:k}
+      }))
+    }});
     map3D.addLayer({
       id:'pois-layer', type:'circle', source:'pois',
-      paint:{
-        'circle-radius':6,
-        'circle-color':'#0055A4',
-        'circle-stroke-color':'#fff',
-        'circle-stroke-width':2
-      }
+      paint:{'circle-radius':6,'circle-color':'#0055A4','circle-stroke-color':'#fff','circle-stroke-width':2}
     });
     map3D.on('click','pois-layer', e=>{
-      const name = e.features[0].properties.name;
+      const name=e.features[0].properties.name;
       handlePOIClick(name);
       new maplibregl.Popup()
         .setLngLat(e.lngLat)
@@ -156,22 +141,20 @@ function initMaps() {
   switchTo2D();
 }
 
-// Handle POI clicks
-function handlePOIClick(key) {
+function handlePOIClick(key){
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
 
-// Initialize controls & modals
-function initControls() {
+function initControls(){
   fillSelect("origin");
   fillSelect("destination");
 
   $("searchBox").addEventListener("input", debounce(()=>{
-    const txt = $("searchBox").value.toLowerCase();
+    const txt=$("searchBox").value.toLowerCase();
     ["origin","destination"].forEach(id=>{
       Array.from($(id).options).forEach(o=>{
-        o.style.display = o.text.toLowerCase().includes(txt) ? 'block' : 'none';
+        o.style.display = o.text.toLowerCase().includes(txt)?'block':'none';
       });
     });
   }));
@@ -181,32 +164,26 @@ function initControls() {
   $("btn3D").onclick       = switchTo3D;
   $("btnStartGPS").onclick = startTracking;
   $("btnFollow").onclick   = ()=>{
-    following = true;
-    if (userMarker2D && getComputedStyle($("map2D")).display!=="none") {
-      map2D.panTo(userMarker2D.getLatLng(), { animate:true });
-    }
-    if (userMarker3D && getComputedStyle($("map3D")).display!=="none") {
+    following=true;
+    if(userMarker2D && getComputedStyle($("map2D")).display!=="none")
+      map2D.panTo(userMarker2D.getLatLng(),{animate:true});
+    if(userMarker3D && getComputedStyle($("map3D")).display!=="none")
       map3D.setCenter(userMarker3D.getLngLat().toArray());
-    }
   };
 
   // Alert modal
   $("alert-close").onclick = ()=> $("alertModal").classList.remove("active");
 
-  // Info form modal
+  // Add Info modal
   $("btnAddInfo").onclick    = ()=>{$("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active");};
   $("btnCancelInfo").onclick = ()=>{$("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active");};
   $("hiddenFileInput").onchange = ()=>{
-    const f = $("hiddenFileInput").files[0];
-    if (f) {
-      const r = new FileReader();
-      r.onload = e => $("preview").src = e.target.result;
-      r.readAsDataURL(f);
-    }
+    const f=$("hiddenFileInput").files[0];
+    if(f){ const r=new FileReader(); r.onload=e=>$("preview").src=e.target.result; r.readAsDataURL(f); }
   };
-  $("btnSaveInfo").onclick  = saveInfo;
+  $("btnSaveInfo").onclick = saveInfo;
 
-  // Saved info modal
+  // View Info modal
   $("btnViewInfos").onclick = ()=>{
     $("infoModalOverlay").classList.add("active");
     $("infoListPanel").classList.add("active");
@@ -217,7 +194,7 @@ function initControls() {
     $("infoListPanel").classList.remove("active");
   };
   $("infoModalOverlay").onclick = e=>{
-    if (e.target === $("infoModalOverlay")) {
+    if(e.target=== $("infoModalOverlay")){
       $("infoModalOverlay").classList.remove("active");
       $("infoListPanel").classList.remove("active");
     }
@@ -226,52 +203,50 @@ function initControls() {
   // IndexedDB
   const req = indexedDB.open("CampusAppDB",1);
   req.onerror     = e=>console.error("DB error",e);
-  req.onsuccess   = e=>{ db = e.target.result; loadAllMarkers(); };
+  req.onsuccess   = e=>{ db=e.target.result; loadAllMarkers(); };
   req.onupgradeneeded = e=>{
-    const store = e.target.result.createObjectStore("infos",{keyPath:"id",autoIncrement:true});
+    const store=e.target.result.createObjectStore("infos",{keyPath:"id",autoIncrement:true});
     store.createIndex("by_date","timestamp");
   };
 }
 
-// Fill origin/destination selects
-function fillSelect(id) {
-  const sel = $(id);
-  sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
-  const groups = {
-    General:   ["Entrance","Library","Cafeteria","GYM","Villa"],
-    Buildings: Object.keys(locations).filter(k=>/^Building/.test(k)||/^Observatoire/.test(k)),
-    Departments: Object.keys(locations).filter(k=>k.startsWith("Département")),
-    Residences: Object.keys(locations).filter(k=>k.startsWith("Résidence")),
-    Labs:       Object.keys(locations).filter(k=>k.startsWith("Laboratory"))
+function fillSelect(id){
+  const sel=$(id);
+  sel.innerHTML=`<option value="">— select —</option><option value="gps">My Location</option>`;
+  const groups={
+    General:["Entrance","Library","Cafeteria","GYM","Villa"],
+    Buildings:Object.keys(locations).filter(k=>/^Building/.test(k)||/^Observatoire/.test(k)),
+    Departments:Object.keys(locations).filter(k=>k.startsWith("Département")),
+    Residences:Object.keys(locations).filter(k=>k.startsWith("Résidence")),
+    Labs:Object.keys(locations).filter(k=>k.startsWith("Laboratory"))
   };
-  for (const label in groups) {
-    const og = document.createElement("optgroup");
-    og.label = label;
+  for(const label in groups){
+    const og=document.createElement("optgroup");
+    og.label=label;
     groups[label].forEach(key=>{
-      const o = document.createElement("option");
-      o.value = key;
-      o.textContent = key.replace(/_/g," ");
+      const o=document.createElement("option");
+      o.value=key;
+      o.textContent=key.replace(/_/g," ");
       og.appendChild(o);
     });
     sel.appendChild(og);
   }
 }
 
-// Draw route in 2D and sync to 3D
-function drawRoute() {
-  const o = $("origin").value, d = $("destination").value;
-  if (!o) return showModal("Select origin");
-  if (!d) return showModal("Select destination");
-  if (routingControl) map2D.removeControl(routingControl);
+function drawRoute(){
+  const o=$("origin").value, d=$("destination").value;
+  if(!o) return showModal("Select origin");
+  if(!d) return showModal("Select destination");
+  if(routingControl) map2D.removeControl(routingControl);
 
-  const origin = o === "gps"
-    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
+  const origin = o==="gps"
+    ? (userMarker2D?userMarker2D.getLatLng():(showModal("Start GPS first"),null))
     : L.latLng(...locations[o]);
-  if (!origin) return;
-  const dest = L.latLng(...locations[d]);
+  if(!origin) return;
+  const dest=L.latLng(...locations[d]);
 
   routingControl = L.Routing.control({
-    router: L.Routing.osrmv1({
+    router:L.Routing.osrmv1({
       serviceUrl:"https://routing.openstreetmap.de/routed-foot/route/v1",
       profile:"foot"
     }),
@@ -281,11 +256,11 @@ function drawRoute() {
     createMarker:()=>null,
     lineOptions:{styles:[{weight:5,color:"#0055A4"}]}
   })
-  .on("routesfound", e=>{
-    const r = e.routes[0];
-    instructions = r.instructions.slice();
-    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
-    window._stepsCtrl = new StepsControl();
+  .on("routesfound",e=>{
+    const r=e.routes[0];
+    instructions=r.instructions.slice();
+    if(window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+    window._stepsCtrl=new StepsControl();
     map2D.addControl(window._stepsCtrl);
     syncRouteTo3D(r.coordinates.map(c=>[c.lng,c.lat]));
   })
@@ -293,200 +268,189 @@ function drawRoute() {
   .addTo(map2D);
 }
 
-function syncRouteTo3D(coords) {
-  const data = { type:"Feature", geometry:{ type:"LineString", coordinates:coords } };
-  if (map3D.getSource("route3D")) {
+function syncRouteTo3D(coords){
+  const data={type:"Feature",geometry:{type:"LineString",coordinates:coords}};
+  if(map3D.getSource("route3D")){
     map3D.getSource("route3D").setData(data);
   } else {
-    map3D.addSource("route3D",{ type:"geojson", data });
+    map3D.addSource("route3D",{type:"geojson",data});
     map3D.addLayer({
       id:"route3D-layer", type:"line", source:"route3D",
-      paint:{ "line-color":"#FFD700","line-width":5 }
+      paint:{"line-color":"#FFD700","line-width":5}
     });
   }
 }
 
-// Handle GPS position updates
-function handlePosition(p) {
-  const { latitude:lat, longitude:lon, accuracy, altitude:alt, altitudeAccuracy:acc, heading } = p.coords;
-  if (accuracy > 100) return;
+function handlePosition(p){
+  const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc,heading} = p.coords;
+  if(accuracy>100) return;
+  if(first){ smoothLat=lat; smoothLon=lon; first=false; if(acc<5) baseAlt=alt; }
+  else { const α=0.4; smoothLat=smoothLat*(1-α)+lat*α; smoothLon=smoothLon*(1-α)+lon*α; }
+  if(++frameCnt%3!==0) return;
 
-  if (first) {
-    smoothLat = lat; smoothLon = lon; first = false;
-    if (acc < 5) baseAlt = alt;
-  } else {
-    const α = 0.4;
-    smoothLat = smoothLat * (1 - α) + lat * α;
-    smoothLon = smoothLon * (1 - α) + lon * α;
-  }
-  if (++frameCnt % 3 !== 0) return;
+  const pos2D=[smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
 
-  const pos2D = [smoothLat, smoothLon],
-        pos3D = [smoothLon, smoothLat];
-
-  // 2D user marker
-  if (getComputedStyle($("map2D")).display !== "none") {
-    if (!userMarker2D) {
-      userMarker2D = L.marker(pos2D).addTo(map2D);
-    } else {
-      userMarker2D.setLatLng(pos2D);
-    }
-    if (following) map2D.panTo(pos2D,{animate:true});
+  // 2D user-marker
+  if(getComputedStyle($("map2D")).display!=="none"){
+    if(!userMarker2D) userMarker2D=L.marker(pos2D).addTo(map2D);
+    else userMarker2D.setLatLng(pos2D);
+    if(following) map2D.panTo(pos2D,{animate:true});
     highlightStep();
   }
 
-  // 3D user marker
-  if (getComputedStyle($("map3D")).display !== "none") {
-    if (!userMarker3D) {
-      userMarker3D = new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
-    } else {
-      userMarker3D.setLngLat(pos3D);
-    }
-    if (following) map3D.setCenter(pos3D);
+  // 3D user-marker
+  if(getComputedStyle($("map3D")).display!=="none"){
+    if(!userMarker3D) userMarker3D=new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
+    else userMarker3D.setLngLat(pos3D);
+    if(following) map3D.setCenter(pos3D);
   }
 
-  // Info panel
-  let floor = "Unknown";
-  if (baseAlt != null && acc < 5) {
-    const d = alt - baseAlt;
-    floor = d < 2 ? "Ground" : d < 4 ? "First" : "Upper";
+  // GPS info panel (amarillo)
+  let floor="Unknown";
+  if(baseAlt!=null && acc<5){
+    const d=alt-baseAlt;
+    floor=d<2?"Ground":d<4?"First":"Upper";
   }
-  $("info").innerHTML = `
+  $("info").innerHTML=`
     <p>
       <strong>Lat:</strong> ${smoothLat.toFixed(6)}<br>
       <strong>Lon:</strong> ${smoothLon.toFixed(6)}<br>
-      <strong>Alt:</strong> ${alt != null ? alt.toFixed(1) + " m" : "—"}<br>
+      <strong>Alt:</strong> ${alt!=null?alt.toFixed(1)+" m":"—"}<br>
       <strong>Acc:</strong> ±${accuracy.toFixed(1)} m<br>
       <strong>Floor:</strong> ${floor}
     </p>`;
 }
 
-function startTracking() {
-  first = true; frameCnt = 0;
-  if (watchId) navigator.geolocation.clearWatch(watchId);
-  navigator.geolocation.getCurrentPosition(handlePosition, ()=>{}, {
+function startTracking(){
+  first=true; frameCnt=0;
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+  navigator.geolocation.getCurrentPosition(handlePosition,()=>{},{
     enableHighAccuracy:true, timeout:5000, maximumAge:0
   });
-  watchId = navigator.geolocation.watchPosition(
+  watchId=navigator.geolocation.watchPosition(
     handlePosition,
-    err => showModal(`GPS error: ${err.message}`),
+    err=>showModal(`GPS error: ${err.message}`),
     { enableHighAccuracy:true, timeout:5000, maximumAge:0 }
   );
 }
 
-// Highlight current step in directions
-function highlightStep() {
-  if (!userMarker2D || !instructions.length) return;
-  const pt = turf.point([userMarker2D.getLatLng().lng, userMarker2D.getLatLng().lat]);
-  let best = 0, bd = Infinity;
+function highlightStep(){
+  if(!userMarker2D||!instructions.length) return;
+  const pt=turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
+  let best=0,bd=Infinity;
   instructions.forEach((inst,i)=>{
-    if (!inst.latLng) return;
-    const d = turf.distance(pt, turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
-    if (d < bd) { bd = d; best = i; }
+    if(!inst.latLng) return;
+    const d=turf.distance(pt,turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
+    if(d<bd){bd=d;best=i;}
   });
   instructions.forEach((_,i)=>{
-    const el = document.getElementById(`step-${i}`);
-    if (el) el.classList.toggle("current", i === best);
+    const el=document.getElementById(`step-${i}`);
+    if(el) el.classList.toggle("current",i===best);
   });
 }
 
-// Switch 2D/3D view
 function switchTo2D(){
-  $("map3D").style.display = "none";
-  $("map2D").style.display = "block";
+  $("map3D").style.display="none";
+  $("map2D").style.display="block";
   map2D.invalidateSize();
 }
 function switchTo3D(){
-  $("map2D").style.display = "none";
-  $("map3D").style.display = "block";
+  $("map2D").style.display="none";
+  $("map3D").style.display="block";
   map3D.resize();
 }
 
-// IndexedDB: load & display saved info markers
-function loadAllMarkers() {
-  const tx = db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess = e => {
-    infoMarkers.forEach(m => m.remove());
-    infoMarkers = [];
+function loadAllMarkers(){
+  const tx=db.transaction("infos","readonly");
+  tx.objectStore("infos").getAll().onsuccess=e=>{
+    infoMarkers.forEach(m=>m.remove());
+    infoMarkers=[];
     e.target.result.forEach(addMarkerToMap);
   };
 }
-function addMarkerToMap(info) {
-  const lng = parseFloat(info.lng), lat = parseFloat(info.lat);
-  if (isNaN(lng) || isNaN(lat)) {
-    console.warn("Invalid coords, skipping marker:", info);
+
+function addMarkerToMap(info){
+  const lng=parseFloat(info.lng), lat=parseFloat(info.lat);
+  if(isNaN(lng)||isNaN(lat)){
+    console.warn("Coords inválidas",info);
     return;
   }
-  const el = document.createElement("div");
-  el.className = "info-marker";
+  const el=document.createElement("div");
+  el.className="info-marker";
   new maplibregl.Marker(el)
-    .setLngLat([lng, lat])
+    .setLngLat([lng,lat])
     .setPopup(new maplibregl.Popup({offset:25})
       .setHTML(`
         <h3>${info.title}</h3>
         <div class="info-meta">
           ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type} ·
-          Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}
+          Lat:${lat.toFixed(6)}, Lon:${lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
         ${info.image?`<img src="${info.image}" class="info-image" alt="${info.title}">`:''}
       `))
     .addTo(map3D);
+  infoMarkers.push(el);
 }
-function saveInfo() {
-  const title       = $("infoTitle").value.trim();
-  const description = $("infoDescription").value.trim();
-  const type        = $("infoMarkerType").value;
-  if (!title || !description) {
-    return alert("Rellena título y descripción.");
-  }
 
-  const image     = $("preview").src || null;
-  const center    = map3D.getCenter();
-  const lng       = center.lng;
-  const lat       = center.lat;
-  const timestamp = Date.now();
+function saveInfo(){
+  const title=$("infoTitle").value.trim();
+  const description=$("infoDescription").value.trim();
+  const type=$("infoMarkerType").value;
+  if(!title||!description) return alert("Rellena título y descripción.");
 
-  const tx = db.transaction("infos","readwrite");
-  tx.objectStore("infos").add({ title, description, type, image, lng, lat, timestamp })
-    .onsuccess = () => {
+  const image=$("preview").src||null;
+  const center=map3D.getCenter();
+  const lng=center.lng;
+  const lat=center.lat;
+  const timestamp=Date.now();
+
+  const tx=db.transaction("infos","readwrite");
+  tx.objectStore("infos").add({title,description,type,image,lng,lat,timestamp})
+    .onsuccess=()=>{
       $("infoFormOverlay").classList.remove("active");
       $("infoForm").classList.remove("active");
-      $("infoTitle").value = "";
-      $("infoDescription").value = "";
-      $("preview").src = "";
+      $("infoTitle").value="";
+      $("infoDescription").value="";
+      $("preview").src="";
       loadAllMarkers();
     };
 }
-function refreshInfoList() {
-  const tx = db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess = e => {
-    const list = $("infoList");
-    list.innerHTML = e.target.result.map(info => `
+
+function refreshInfoList(){
+  const tx=db.transaction("infos","readonly");
+  tx.objectStore("infos").getAll().onsuccess=e=>{
+    const list=$("infoList");
+    list.innerHTML=e.target.result.map(info=>`
       <div class="info-item">
         <h3>${info.title}</h3>
         <div class="info-meta">
-          ${new Date(info.timestamp).toLocaleString()} ·
-          Type: ${info.type} ·
-          Lat: ${info.lat.toFixed(6)}, Lon: ${info.lng.toFixed(6)}
+          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type} ·
+          Lat:${info.lat.toFixed(6)}, Lon:${info.lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
         ${info.image?`<img src="${info.image}" class="info-image" alt="${info.title}">`:''}
+        <button class="btn-delete" data-id="${info.id}">Delete</button>
       </div>
     `).join('');
+    list.querySelectorAll(".btn-delete").forEach(btn=>{
+      btn.onclick=()=>{
+        const id=Number(btn.dataset.id);
+        db.transaction("infos","readwrite").objectStore("infos").delete(id)
+          .onsuccess=refreshInfoList;
+      };
+    });
   };
 }
 
 // Utilities
-function debounce(fn, delay=100){
+function debounce(fn,delay=100){
   let t;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), delay);
-  };
+  return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),delay);};
 }
+
 function showModal(msg){
-  $("alert-message").textContent = msg;
+  $("alert-message").textContent=msg;
   $("alertModal").classList.add("active");
 }
 

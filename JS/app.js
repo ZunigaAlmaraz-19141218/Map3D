@@ -1,3 +1,5 @@
+// app.js
+
 // Data of Campus & POIs
 const locations = {
   Entrance:      [43.225018, 0.052059],
@@ -35,13 +37,13 @@ const locations = {
 };
 
 // Global variables
-// Leaflet 2D and MapLibre 3D maps, controls, markers, etc.
 let map2D, map3D, routingControl, instructions = [];
-let marker2D, marker3D, watchId, smoothLat, smoothLon, first = true, frameCnt = 0;
+let userMarker2D = null, userMarker3D = null;
+let watchId = null, following = true;
+let smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
 let db, infoMarkers = [];
-let baseAlt = null;
 
-// Helper
+// Shortcut for document.getElementById
 const $ = id => document.getElementById(id);
 
 // Basic assertions for testing
@@ -54,7 +56,7 @@ function runTests() {
   assert($("infoTitle") && $("infoDescription"), "Inputs info existen");
 }
 
-// Steps Control of Leaflet
+// Control personalizado para instrucciones de ruta
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
@@ -69,18 +71,18 @@ const StepsControl = L.Control.extend({
   }
 });
 
-// Initialize the application
+// Inicialización principal
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
 
-// Maps and plugins
+// Configuración de mapas 2D y 3D
 function initMaps() {
   const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
 
-  // Map 2D
+  // Mapa 2D
   map2D = L.map("map2D", {
     center: [43.22476,0.05044],
     zoom: 18,
@@ -88,21 +90,12 @@ function initMaps() {
     maxZoom: 19,
     maxBounds: campusBounds
   });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ maxZoom:19 }).addTo(map2D);
-
-  // Metric scale
-  L.control.scale({ imperial:false }).addTo(map2D);
-
-  // MiniMap
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map2D);
+  L.control.scale({ imperial: false }).addTo(map2D);
   new L.Control.MiniMap(
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
-    { toggleDisplay:true }
+    { toggleDisplay: true }
   ).addTo(map2D);
-
-  // Button Controls
-  L.control.locate({ flyTo:true, showPopup:false }).addTo(map2D);
-
-  // Tool for measuring distances and areas
   L.control.measure({
     position: 'topright',
     primaryLengthUnit: 'meters',
@@ -111,7 +104,8 @@ function initMaps() {
     secondaryAreaUnit: 'hectares'
   }).addTo(map2D);
 
-  // Group POIs and add click handler
+  map2D.on('dragstart zoomstart', () => following = false);
+
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key, coords]) => {
     const m = L.marker(coords).bindPopup(key.replace(/_/g,' '));
@@ -120,7 +114,7 @@ function initMaps() {
   });
   map2D.addLayer(cluster);
 
-  // Map 3D with POIs and StepsControl
+  // Mapa 3D
   map3D = new maplibregl.Map({
     container: "map3D",
     style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
@@ -131,9 +125,9 @@ function initMaps() {
     antialias: true
   });
   map3D.addControl(new maplibregl.NavigationControl());
+  map3D.on('dragstart zoomstart', () => following = false);
 
   map3D.on('load', () => {
-    // Source of POIs
     map3D.addSource('pois', {
       type: 'geojson',
       data: {
@@ -145,7 +139,6 @@ function initMaps() {
         }))
       }
     });
-    // Layer of POIs
     map3D.addLayer({
       id: 'pois-layer', type: 'circle', source: 'pois',
       paint: {
@@ -155,7 +148,6 @@ function initMaps() {
         'circle-stroke-width': 2
       }
     });
-    // Click on POIs 3D
     map3D.on('click', 'pois-layer', e => {
       const name = e.features[0].properties.name;
       handlePOIClick(name);
@@ -169,43 +161,44 @@ function initMaps() {
   switchTo2D();
 }
 
-// Manage clicks on POIs
+// Manejo de clics en POIs
 function handlePOIClick(key) {
-  if (!$("origin").value) {
-    $("origin").value = key;
-  } else {
-    $("destination").value = key;
-  }
+  if (!$("origin").value) $("origin").value = key;
+  else $("destination").value = key;
 }
 
-// Controls and forms
+// Inicialización de controles y formularios
 function initControls() {
   fillSelect("origin");
   fillSelect("destination");
 
-  $("searchBox").addEventListener("input", debounce(()=>{
+  $("searchBox").addEventListener("input", debounce(() => {
     const txt = $("searchBox").value.toLowerCase();
     ["origin","destination"].forEach(id => {
-      Array.from($(id).options).forEach(o=>{
-        o.style.display = o.text.toLowerCase().includes(txt)?'block':'none';
+      Array.from($(id).options).forEach(o => {
+        o.style.display = o.text.toLowerCase().includes(txt) ? 'block' : 'none';
       });
     });
   }));
 
-  $("btnGo").onclick = drawRoute;
-  $("btn2D").onclick = switchTo2D;
-  $("btn3D").onclick = switchTo3D;
-  $("btnStartGPS").onclick = startTracking; 
+  $("btnGo").onclick       = drawRoute;
+  $("btn2D").onclick       = switchTo2D;
+  $("btn3D").onclick       = switchTo3D;
+  $("btnStartGPS").onclick = startTracking;
+  $("btnFollow").onclick   = () => {
+    following = true;
+    if (userMarker2D && getComputedStyle($("map2D")).display!=="none") {
+      map2D.panTo(userMarker2D.getLatLng(), { animate: true });
+    }
+    if (userMarker3D && getComputedStyle($("map3D")).display!=="none") {
+      map3D.setCenter(userMarker3D.getLngLat().toArray());
+    }
+  };
 
-  $("btnAddInfo").onclick = () => {
-    $("infoFormOverlay").style.display = 'flex';
-    $("infoForm").style.display = 'block';
-  };
-  $("btnCancelInfo").onclick = () => {
-    $("infoFormOverlay").style.display = 'none';
-    $("infoForm").style.display = 'none';
-  };
-  $("hiddenFileInput").onchange = ()=> {
+  // Modales de info
+  $("btnAddInfo").onclick       = () => { $("infoFormOverlay").style.display='flex'; $("infoForm").style.display='block'; };
+  $("btnCancelInfo").onclick    = () => { $("infoFormOverlay").style.display='none'; $("infoForm").style.display='none'; };
+  $("hiddenFileInput").onchange  = () => {
     const f = $("hiddenFileInput").files[0];
     if (f) {
       const r = new FileReader();
@@ -213,60 +206,36 @@ function initControls() {
       r.readAsDataURL(f);
     }
   };
-  $("btnSaveInfo").onclick = saveInfo;
-  $("btnViewInfos").onclick = ()=>{
-    $("infoModalOverlay").style.display = 'flex';
-    $("infoListPanel").style.display = 'block';
-    refreshInfoList();
-  };
-  $("btnCloseInfoPanel").onclick = ()=>{
-    $("infoModalOverlay").style.display = 'none';
-    $("infoListPanel").style.display = 'none';
-  };
+  $("btnSaveInfo").onclick      = saveInfo;
+  $("btnViewInfos").onclick     = () => { $("infoModalOverlay").style.display='flex'; $("infoListPanel").style.display='block'; refreshInfoList(); };
+  $("btnCloseInfoPanel").onclick= () => { $("infoModalOverlay").style.display='none'; $("infoListPanel").style.display='none'; };
   $("infoModalOverlay").onclick = e => {
     if (e.target === $("infoModalOverlay")) {
-      $("infoModalOverlay").style.display = 'none';
-      $("infoListPanel").style.display = 'none';
+      $("infoModalOverlay").style.display='none';
+      $("infoListPanel").style.display='none';
     }
   };
 
-  // IndexedDB
+  // IndexedDB para marcadores de info
   const req = indexedDB.open("CampusAppDB",1);
-  req.onerror = e => console.error("DB error", e);
-  req.onsuccess = e => {
-    db = e.target.result;
-    loadAllMarkers();
-  };
+  req.onerror     = e => console.error("DB error", e);
+  req.onsuccess   = e => { db = e.target.result; loadAllMarkers(); };
   req.onupgradeneeded = e => {
-    const store = e.target.result.createObjectStore("infos", {
-      keyPath: "id", autoIncrement: true
-    });
+    const store = e.target.result.createObjectStore("infos", { keyPath: "id", autoIncrement: true });
     store.createIndex("by_date","timestamp");
   };
 }
 
-// Auxiliary 
-function debounce(fn, delay=100){
-  let t;
-  return (...args)=> {
-    clearTimeout(t);
-    t = setTimeout(()=>fn(...args), delay);
-  };
-}
-function showModal(msg){
-  $("alert-message").textContent = msg;
-  $("alertModal").style.display = 'flex';
-}
-$("alert-close").onclick = ()=> $("alertModal").style.display = 'none';
-function fillSelect(id){
+// Rellena los <select> de origin/destination
+function fillSelect(id) {
   const sel = $(id);
   sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
   const groups = {
-    General: ["Entrance","Library","Cafeteria","GYM","Villa"],
+    General:   ["Entrance","Library","Cafeteria","GYM","Villa"],
     Buildings: Object.keys(locations).filter(k=>/^Building/.test(k)||/^Observatoire/.test(k)),
     Departments: Object.keys(locations).filter(k=>k.startsWith("Département")),
-    Residences: Object.keys(locations).filter(k=>k.startsWith("Résidence")),
-    Labs: Object.keys(locations).filter(k=>k.startsWith("Laboratory"))
+    Residences:  Object.keys(locations).filter(k=>k.startsWith("Résidence")),
+    Labs:        Object.keys(locations).filter(k=>k.startsWith("Laboratory"))
   };
   for (const label in groups) {
     const og = document.createElement("optgroup");
@@ -281,17 +250,19 @@ function fillSelect(id){
   }
 }
 
-// Routing & Steps
-function drawRoute(){
+// Dibuja la ruta en 2D y la sincroniza en 3D
+function drawRoute() {
   const o = $("origin").value, d = $("destination").value;
   if (!o) return showModal("Select origin");
   if (!d) return showModal("Select destination");
   if (routingControl) map2D.removeControl(routingControl);
+
   const origin = o==="gps"
-    ? (marker2D?marker2D.getLatLng():(showModal("Start GPS first"), null))
+    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
     : L.latLng(...locations[o]);
   if (!origin) return;
   const dest = L.latLng(...locations[d]);
+
   routingControl = L.Routing.control({
     router: L.Routing.osrmv1({
       serviceUrl:"https://routing.openstreetmap.de/routed-foot/route/v1",
@@ -315,7 +286,7 @@ function drawRoute(){
   .addTo(map2D);
 }
 
-function syncRouteTo3D(coords){
+function syncRouteTo3D(coords) {
   const data = { type:"Feature", geometry:{ type:"LineString", coordinates:coords } };
   if (map3D.getSource("route3D")) {
     map3D.getSource("route3D").setData(data);
@@ -328,8 +299,8 @@ function syncRouteTo3D(coords){
   }
 }
 
-// GPS Tracking
-function handlePosition(p){
+// Manejo de posición GPS
+function handlePosition(p) {
   const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc,heading} = p.coords;
   if (accuracy>100) return;
   if (first){
@@ -341,27 +312,39 @@ function handlePosition(p){
     smoothLon = smoothLon*(1-α) + lon*α;
   }
   if (++frameCnt % 3 !== 0) return;
+
   const pos2D=[smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
-  if (getComputedStyle($("map2D")).display!=="none"){
-    if (!marker2D){
-      marker2D = L.marker(pos2D,{ icon: L.divIcon({
+
+  // Actualiza marcador 2D
+  if (getComputedStyle($("map2D")).display!=="none") {
+    if (!userMarker2D){
+      userMarker2D = L.marker(pos2D,{ icon: L.divIcon({
         className: "user-marker",
         html:'<div class="inner"></div><div class="arrow"></div>',
         iconSize:[24,24], iconAnchor:[12,12]
       })}).addTo(map2D);
-    } else marker2D.setLatLng(pos2D);
-    if (heading!=null){
-      marker2D.getElement().querySelector(".arrow")
-        .style.transform = `translateX(-50%) rotate(${heading}deg)`;
+    } else {
+      userMarker2D.setLatLng(pos2D);
+      if (heading!=null){
+        userMarker2D.getElement().querySelector(".arrow")
+          .style.transform = `translateX(-50%) rotate(${heading}deg)`;
+      }
     }
-    map2D.setView(pos2D,map2D.getZoom());
+    if (following) map2D.panTo(pos2D);
     highlightStep();
   }
-  if (getComputedStyle($("map3D")).display!=="none"){
-    if (!marker3D) marker3D = new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
-    else marker3D.setLngLat(pos3D);
-    map3D.setCenter(pos3D);
+
+  // Actualiza marcador 3D
+  if (getComputedStyle($("map3D")).display!=="none") {
+    if (!userMarker3D){
+      userMarker3D = new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
+    } else {
+      userMarker3D.setLngLat(pos3D);
+    }
+    if (following) map3D.setCenter(pos3D);
   }
+
+  // Panel de info
   let floor="Unknown";
   if (baseAlt!=null && acc<5){
     const d = alt - baseAlt;
@@ -378,11 +361,10 @@ function handlePosition(p){
 }
 
 function startTracking(){
-  if (!navigator.geolocation) return showModal("Geolocation not supported");
   first=true; frameCnt=0;
   if (watchId) navigator.geolocation.clearWatch(watchId);
   navigator.geolocation.getCurrentPosition(handlePosition, ()=>{}, {
-    enableHighAccuracy:false, timeout:3000, maximumAge:60000
+    enableHighAccuracy:true, timeout:5000, maximumAge:0
   });
   watchId = navigator.geolocation.watchPosition(
     handlePosition,
@@ -391,9 +373,10 @@ function startTracking(){
   );
 }
 
+// Resalta paso actual en instrucciones
 function highlightStep(){
-  if (!marker2D || !instructions.length) return;
-  const pt = turf.point([marker2D.getLatLng().lng,marker2D.getLatLng().lat]);
+  if (!userMarker2D || !instructions.length) return;
+  const pt = turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
   let best=0, bd=Infinity;
   instructions.forEach((inst,i)=>{
     if (!inst.latLng) return;
@@ -401,37 +384,36 @@ function highlightStep(){
     if (d<bd){bd=d;best=i;}
   });
   instructions.forEach((_,i)=>{
-    const el = document.getElementById("step-"+i);
-    if (el) el.classList.toggle("current",i===best);
+    const el=document.getElementById(`step-${i}`);
+    if (el) el.classList.toggle("current", i===best);
   });
 }
 
+// Cambiar entre vistas 2D y 3D
 function switchTo2D(){
   $("map3D").style.display="none";
   $("map2D").style.display="block";
   map2D.invalidateSize();
 }
-
 function switchTo3D(){
   $("map2D").style.display="none";
   $("map3D").style.display="block";
   map3D.resize();
 }
 
-// IndexedDB and Info Markers
+// IndexedDB: cargar y mostrar marcadores de info
 function loadAllMarkers(){
-  const tx = db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess = e => {
+  const tx=db.transaction("infos","readonly");
+  tx.objectStore("infos").getAll().onsuccess=e=>{
     infoMarkers.forEach(m=>m.remove());
     infoMarkers=[];
     e.target.result.forEach(addMarkerToMap);
   };
 }
-
 function addMarkerToMap(info){
-  const el = document.createElement("div");
+  const el=document.createElement("div");
   el.className="info-marker";
-  const m = new maplibregl.Marker(el)
+  const m=new maplibregl.Marker(el)
     .setLngLat([info.lng,info.lat])
     .setPopup(new maplibregl.Popup({offset:25})
       .setHTML(`
@@ -442,19 +424,18 @@ function addMarkerToMap(info){
     .addTo(map3D);
   infoMarkers.push(m);
 }
-
 function saveInfo(){
-  const title = $("infoTitle").value.trim();
-  const description = $("infoDescription").value.trim();
+  const title=$("infoTitle").value.trim();
+  const description=$("infoDescription").value.trim();
   if (!title||!description) return alert("Rellena título y descripción.");
-  const image = $("preview").src||null;
-  const center = map3D.getCenter();
-  const tx = db.transaction("infos","readwrite");
+  const image=$("preview").src||null;
+  const center=map3D.getCenter();
+  const tx=db.transaction("infos","readwrite");
   tx.objectStore("infos").add({
     title,description,image,
     lng:center.lng,lat:center.lat,
     timestamp:Date.now()
-  }).onsuccess = ()=>{
+  }).onsuccess=()=>{
     $("infoFormOverlay").style.display='none';
     $("infoForm").style.display='none';
     $("infoTitle").value='';
@@ -463,12 +444,11 @@ function saveInfo(){
     loadAllMarkers();
   };
 }
-
 function refreshInfoList(){
-  const tx = db.transaction("infos","readonly");
+  const tx=db.transaction("infos","readonly");
   tx.objectStore("infos").getAll().onsuccess=e=>{
-    const list = $("infoList");
-    list.innerHTML = e.target.result.map(info=>`
+    const list=$("infoList");
+    list.innerHTML=e.target.result.map(info=>`
       <li>
         <strong>${info.title}</strong><br>
         ${info.description}
@@ -480,8 +460,25 @@ function refreshInfoList(){
       btn.onclick=()=>{
         const id=Number(btn.dataset.id);
         db.transaction("infos","readwrite").objectStore("infos").delete(id)
-          .onsuccess=()=>refreshInfoList();
+          .onsuccess=refreshInfoList;
       };
     });
   };
 }
+
+// Utilidades
+function debounce(fn, delay=100){
+  let t;
+  return (...args)=>{
+    clearTimeout(t);
+    t=setTimeout(()=>fn(...args), delay);
+  };
+}
+function showModal(msg){
+  $("alert-message").textContent=msg;
+  $("alertModal").style.display='flex';
+}
+$("alert-close").onclick = ()=> $("alertModal").style.display='none';
+
+// Arrancar la app
+document.addEventListener("DOMContentLoaded", initApp);

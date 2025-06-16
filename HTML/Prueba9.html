@@ -43,7 +43,7 @@
     <button id="btnViewInfos">View Information</button>
   </div>
 
-  <!-- Modal de alertas -->
+  <!-- Alert Modal -->
   <div id="alertModal" class="modal-overlay">
     <div class="modal-content">
       <button id="alert-close" class="modal-close" aria-label="Cerrar">&times;</button>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <!-- Add Information -->
+  <!-- Add Information Modal -->
   <div id="infoFormOverlay" class="modal-overlay"></div>
   <div id="infoForm" class="modal-content info-modal">
     <div class="modal-header">
@@ -80,7 +80,7 @@
     </div>
   </div>
 
-  <!-- Saved Information -->
+  <!-- View Information Modal -->
   <div id="infoModalOverlay" class="modal-overlay"></div>
   <div id="infoListPanel" class="modal-content info-modal">
     <div class="modal-header">
@@ -90,11 +90,14 @@
     <div id="infoList" class="info-list"></div>
   </div>
 
-  <!-- Mapas -->
-  <div id="map2D" role="region" aria-label="Campus Map" style="height:60vh;"></div>
-  <div id="map3D" role="region" aria-label="Campus 3D Map" style="height:60vh; display:none;"></div>
+  <!-- Maps -->
+  <div id="map2D" role="region" aria-label="Campus Map"></div>
+  <div id="map3D" role="region" aria-label="Campus 3D Map"></div>
 
-  <!-- Scripts externos -->
+  <!-- GPS Info Panel -->
+  <div id="info" role="status"></div>
+
+  <!-- External Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>

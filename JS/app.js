@@ -60,18 +60,35 @@ function runTests() {
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
-    const div = L.DomUtil.create('div', 'leaflet-steps');
+    // creamos el contenedor arrancando en 'collapsed'
+    const div = L.DomUtil.create('div', 'leaflet-steps collapsed');
+    // inyectamos el header con icono y el ol
     div.innerHTML = `
-      <h3>Steps (${instructions.length})</h3>
+      <h3 role="button" aria-expanded="false">
+        Steps (${instructions.length})
+        <span class="toggle-icon">▼</span>
+      </h3>
       <ol>
         ${instructions.map((inst,i)=>
           `<li id="step-${i}">${inst.text}</li>`
         ).join('')}
       </ol>`;
     L.DomEvent.disableClickPropagation(div);
+
+    // 1) capturar el <h3> como botón
+    const header = div.querySelector('h3');
+    // 2) al hacer click, alternar collapsed y aria-expanded
+    L.DomEvent.on(header, 'click', () => {
+      const isCollapsed = div.classList.toggle('collapsed');
+      header.setAttribute('aria-expanded', (!isCollapsed).toString());
+      // opcional: reajustar posición tras cambiar tamaño
+      adjustDirectionsPosition();
+    });
+
     return div;
   }
 });
+
 
 // Inicialización
 function initApp() {

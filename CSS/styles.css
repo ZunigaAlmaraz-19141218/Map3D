@@ -377,3 +377,33 @@ body {
     height: clamp(200px, 50vh, 400px);
   }
 }
+/* —————— Collapsible Steps Panel —————— */
+.leaflet-steps h3 {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.leaflet-steps h3 .toggle-icon {
+  display: inline-block;
+  transition: transform var(--transition-speed) ease;
+  font-size: 0.8em;
+  margin-left: 0.5em;
+}
+/* transiciones en la lista */
+.leaflet-steps ol {
+  max-height: 300px;           /* altura máxima “expanded” */
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height var(--transition-speed) ease,
+              opacity    var(--transition-speed) ease;
+}
+/* estado colapsado: lista oculta */
+.leaflet-steps.collapsed ol {
+  max-height: 0;
+  opacity: 0;
+}
+/* girar icono al colapsar */
+.leaflet-steps.collapsed h3 .toggle-icon {
+  transform: rotate(-90deg);
+}

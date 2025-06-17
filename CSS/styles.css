@@ -1,6 +1,6 @@
-/* CSS/styles.css */
+/* styles.css */
 
-/* Variables CSS */
+/* Variables */
 :root {
   --color-primary: #0055A4;
   --color-accent: #FFD700;
@@ -12,22 +12,18 @@
   --z-overlay: 1999;
   --z-form: 2001;
   --z-directions: 1000;
-  --bg-directions: #ffffff;    /* Fondo sólido para el panel de pasos */
+  --bg-directions: #ffffff;
 }
 
-/* Reset & base */
-* {
-  /* margin: 0; */
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Reset & Base */
+* { padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-/* Control */
+/* Controls */
 #controls {
   background: #fff;
   border-bottom: 2px solid var(--color-primary);
@@ -37,13 +33,9 @@ body {
   align-items: center;
   gap: clamp(8px, 1vw, 16px);
 }
-#controls label {
-  color: var(--color-primary);
-  font-weight: 600;
-}
+#controls button,
 #controls input,
-#controls select,
-#controls button {
+#controls select {
   padding: clamp(6px, 1vw, 12px);
   font-size: clamp(12px, 1.2vw, 16px);
   border: 1px solid #ccc;
@@ -61,6 +53,7 @@ body {
 #controls input:hover {
   border-color: var(--color-primary);
 }
+#controls label { color: var(--color-primary); font-weight: 600; }
 
 /* Maps */
 #map2D,
@@ -70,7 +63,7 @@ body {
   margin-top: clamp(8px, 1vh, 12px);
   border: 2px solid var(--color-primary);
   border-radius: var(--border-radius);
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.1);
 }
 #map3D { display: none; }
 
@@ -319,11 +312,41 @@ body {
   background: orange; border-radius: 50%; border: 2px solid #fff;
 }
 
-/* Responsive */
+/* Responsive: stack controls vertically on narrower viewports */
 @media (max-width: 768px) {
   #controls {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* Responsive: make steps panel full-width on small screens */
+@media (max-width: 600px) {
+  .leaflet-steps {
+    /* wider and taller so it’s usable on phones */
+    width: clamp(220px, 90%, 350px) !important;
+    max-height: 25vh !important;
+    border-radius: 0 0 8px 8px !important;
+    padding: clamp(8px, 1vh, 12px) !important;
+  }
+}
+
+/* Responsive: smaller map height and slimmer controls on very small screens */
+@media (max-width: 480px) {
+  #controls {
+    padding: clamp(8px, 1vw, 12px);
+  }
+
+  #controls input,
+  #controls select,
+  #controls button {
+    font-size: clamp(10px, 1.2vw, 14px);
+    padding: clamp(4px, 0.5vw, 8px);
+  }
+
+  #map2D,
+  #map3D {
+    height: clamp(200px, 50vh, 400px);
   }
 }
 
@@ -377,33 +400,88 @@ body {
     height: clamp(200px, 50vh, 400px);
   }
 }
-/* —————— Collapsible Steps Panel —————— */
+/* Steps Panel */
+.leaflet-steps {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid #ccc !important;
+  border-radius: 8px 8px 0 0 !important;
+  padding: clamp(12px, 2vh, 16px) !important;
+  transition: opacity var(--transition-speed), transform var(--transition-speed) !important;
+  position: absolute !important;
+  top: clamp(60px, 8vh, 100px) !important;
+  right: clamp(10px, 4vw, 20px) !important;
+  width: clamp(220px, 30%, 350px) !important;
+  max-height: clamp(180px, 40vh, 400px) !important;
+  overflow-y: auto !important;
+}
 .leaflet-steps h3 {
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
 }
 .leaflet-steps h3 .toggle-icon {
-  display: inline-block;
+  margin-left: 0.5em;
   transition: transform var(--transition-speed) ease;
   font-size: 0.8em;
-  margin-left: 0.5em;
 }
-/* transiciones en la lista */
-.leaflet-steps ol {
-  max-height: 300px;           /* altura máxima “expanded” */
-  opacity: 1;
-  overflow: hidden;
-  transition: max-height var(--transition-speed) ease,
-              opacity    var(--transition-speed) ease;
+.leaflet-steps h3 .close-icon {
+  margin-left: auto;       /* push X to the right */
+  font-size: 0.9em;
+  cursor: pointer;         /* make clickable */
 }
-/* estado colapsado: lista oculta */
 .leaflet-steps.collapsed ol {
   max-height: 0;
   opacity: 0;
 }
-/* girar icono al colapsar */
 .leaflet-steps.collapsed h3 .toggle-icon {
   transform: rotate(-90deg);
+}
+
+/* Instruction tooltips on map */
+.leaflet-tooltip.inst-tooltip {
+  background: var(--bg-directions);
+  color: var(--color-text);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+}
+/* —————— Full‐panel collapse: shrink to header only —————— */
+/* When .collapsed, hide the list and tighten the container */
+.leaflet-steps.collapsed {
+  /* shrink width to header */
+  width: fit-content !important;
+  /* remove padding around the list */
+  padding: 4px 8px !important;
+  /* keep only header height */
+  max-height: none !important;
+  /* optional: semitransparent so it's less intrusivo */
+  opacity: 0.8;
+}
+
+/* hide the <ol> entirely */
+.leaflet-steps.collapsed ol {
+  display: none !important;
+}
+
+/* rotate toggle‐icon into ► */
+.leaflet-steps.collapsed .toggle-icon {
+  transform: rotate(-90deg) !important;
+}
+
+/* ensure the close‐icon (✕) also only shows in header */
+.leaflet-steps h3 {
+  padding: 0;
+  margin: 0;
+}
+
+/* optional: make the collapsed header stand out a bit */
+.leaflet-steps.collapsed {
+  background-color: var(--bg-directions) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
 }

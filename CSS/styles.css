@@ -83,16 +83,16 @@ body {
 
 /* Modal Generic */
 .modal-overlay {
-  display: none;                 /* oculto por defecto */
+  display: none;                 /* Default */
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);   /* semitransparente */
-  justify-content: center;       /* centrar horizontalmente */
-  align-items: center;           /* centrar verticalmente */
+  background: rgba(0,0,0,0.4);   /* Semi-transparent */
+  justify-content: center;       /* Horizontal center */
+  align-items: center;           /* Vertical center */
   z-index: var(--z-modal);
 }
 .modal-overlay.active {
-  display: flex;                 /* mostrar como flex cuando tenga “active” */
+  display: flex;                 /* Show as flex when active */
 }
 .modal-content {
   background: #fff;
@@ -372,10 +372,6 @@ body {
 }
 
 /* Override .leaflet-steps: always white and opaque */
-/* …y el resto de tu CSS original sin cambios… */
-
-
-/* Override .leaflet-steps: always white and opaque */
 .leaflet-steps {
   background-color: #ffffff !important;
   opacity: 1 !important;
@@ -475,7 +471,7 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   white-space: nowrap;
 }
-/* —————— Full‐panel collapse: shrink to header only —————— */
+
 /* When .collapsed, hide the list and tighten the container */
 .leaflet-steps.collapsed {
   /* shrink width to header */
@@ -510,7 +506,7 @@ body {
   border-radius: 8px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
 }
-/* Asegura que el marcador dinámico destaque */
+/* Ensure the dynamic marker stands out */
 .custom-dynamic-marker {
   z-index: 700 !important;
 }
@@ -518,7 +514,7 @@ body {
 .custom-dynamic-marker .custom-icon {
   width: 24px;
   height: 24px;
-  background: rgba(255, 69, 0, 0.9); /* color naranja fuerte */
+  background: rgba(255, 69, 0, 0.9); /* Strong orange color */
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);

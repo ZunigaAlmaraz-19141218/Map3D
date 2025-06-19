@@ -1,6 +1,8 @@
 // app.js
 
+
 // Datos de Campus & POIs
+
 const locations = {
   Entrance:      [43.225018, 0.052059],
   Library:       [43.224945, 0.051151],
@@ -36,8 +38,11 @@ const locations = {
   Laboratory_L4: [43.226383, 0.050033]
 };
 
+
 // Globals
+
 let map2D, map3D, routingControl, instructions = [];
+let dynamicMarker = null, navControl = null;
 let userMarker2D = null, userMarker3D = null;
 let watchId = null, following = true;
 let smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
@@ -46,378 +51,412 @@ let db, infoMarkers = [];
 // Shortcut
 const $ = id => document.getElementById(id);
 
-// Simple tests
-function assert(cond, msg) {
-  if (!cond) throw new Error(msg);
-}
+
+// Tests
+
+function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function runTests() {
-  assert($("origin"), "Falta #origin");
-  assert($("destination"), "Falta #destination");
-  assert($("infoTitle") && $("infoDescription"), "Faltan inputs de info");
+  assert($("origin"), "Missing #origin");
+  assert($("destination"), "Missing #destination");
+  assert($("infoTitle") && $("infoDescription"), "Missing info inputs");
 }
 
-// Steps Control
+
+// Control para pasos
+
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
-    // creamos el contenedor arrancando en 'collapsed'
     const div = L.DomUtil.create('div', 'leaflet-steps collapsed');
-    // inyectamos el header con icono y el ol
     div.innerHTML = `
       <h3 role="button" aria-expanded="false">
         Steps (${instructions.length})
         <span class="toggle-icon">▼</span>
       </h3>
       <ol>
-        ${instructions.map((inst,i)=>
+        ${instructions.map((inst, i) =>
           `<li id="step-${i}">${inst.text}</li>`
         ).join('')}
       </ol>`;
     L.DomEvent.disableClickPropagation(div);
-
-    // 1) capturar el <h3> como botón
     const header = div.querySelector('h3');
-    // 2) al hacer click, alternar collapsed y aria-expanded
     L.DomEvent.on(header, 'click', () => {
       const isCollapsed = div.classList.toggle('collapsed');
       header.setAttribute('aria-expanded', (!isCollapsed).toString());
-      // opcional: reajustar posición tras cambiar tamaño
       adjustDirectionsPosition();
     });
-
     return div;
   }
 });
 
 
 // Inicialización
+
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
 
-// Mapas
-function initMaps() {
-  const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
 
-  // 2D
+// initMaps()
+
+function initMaps() {
+  const campusBounds = [[43.2235, 0.0459], [43.2280, 0.0536]];
+
+  // 2D map
   map2D = L.map("map2D", {
-    center:[43.22476,0.05044],
-    zoom:18, minZoom:17, maxZoom:19, maxBounds:campusBounds
+    center: [43.22476, 0.05044],
+    zoom: 18, minZoom: 17, maxZoom: 19, maxBounds: campusBounds
   });
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map2D);
-  L.control.scale({imperial:false}).addTo(map2D);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map2D);
+  L.control.scale({ imperial: false }).addTo(map2D);
   new L.Control.MiniMap(
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
-    {toggleDisplay:true}
+    { toggleDisplay: true }
   ).addTo(map2D);
   L.control.measure({
-    position:'topright',
-    primaryLengthUnit:'meters', secondaryLengthUnit:'kilometers',
-    primaryAreaUnit:'sqmeters', secondaryAreaUnit:'hectares'
+    position: 'topright',
+    primaryLengthUnit: 'meters',
+    secondaryLengthUnit: 'kilometers',
+    primaryAreaUnit: 'sqmeters',
+    secondaryAreaUnit: 'hectares'
   }).addTo(map2D);
+  map2D.on('dragstart zoomstart', () => following = false);
 
-  map2D.on('dragstart zoomstart', ()=> following=false);
-
-  // POIs
+  // Cluster de POIs
   const cluster = L.markerClusterGroup();
-  Object.entries(locations).forEach(([key,coords])=>{
-    const m = L.marker(coords).bindPopup(key.replace(/_/g,' '));
-    m.on('click',()=> handlePOIClick(key));
+  Object.entries(locations).forEach(([key, coords]) => {
+    const m = L.marker(coords).bindPopup(key.replace(/_/g, ' '));
+    m.on('click', () => handlePOIClick(key));
     cluster.addLayer(m);
   });
   map2D.addLayer(cluster);
 
-  // 3D
+  // 3D map
   map3D = new maplibregl.Map({
-    container:"map3D",
-    style:"https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
-    center:[0.05044,43.22476], zoom:17, pitch:60, bearing:-20, antialias:true
+    container: "map3D",
+    style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
+    center: [0.05044, 43.22476], zoom: 17, pitch: 60, bearing: -20, antialias: true
   });
   map3D.addControl(new maplibregl.NavigationControl());
-  map3D.on('dragstart zoomstart', ()=> following=false);
-
-  map3D.on('load', ()=>{
-    map3D.addSource('pois',{type:'geojson', data:{
-      type:'FeatureCollection',
-      features:Object.entries(locations).map(([k,c])=>({
-        type:'Feature',
-        geometry:{type:'Point',coordinates:[c[1],c[0]]},
-        properties:{name:k}
-      }))
-    }});
-    map3D.addLayer({
-      id:'pois-layer', type:'circle', source:'pois',
-      paint:{
-        'circle-radius':6,
-        'circle-color':'#0055A4',
-        'circle-stroke-color':'#fff',
-        'circle-stroke-width':2
+  map3D.on('dragstart zoomstart', () => following = false);
+  map3D.on('load', () => {
+    map3D.addSource('pois', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: Object.entries(locations).map(([k, c]) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [c[1], c[0]] },
+          properties: { name: k }
+        }))
       }
     });
-    map3D.on('click','pois-layer', e=>{
-      const name=e.features[0].properties.name;
+    map3D.addLayer({
+      id: 'pois-layer', type: 'circle', source: 'pois',
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#0055A4',
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 2
+      }
+    });
+    map3D.on('click', 'pois-layer', e => {
+      const name = e.features[0].properties.name;
       handlePOIClick(name);
       new maplibregl.Popup()
         .setLngLat(e.lngLat)
-        .setHTML(`<strong>${name.replace(/_/g,' ')}</strong>`)
+        .setHTML(`<strong>${name.replace(/_/g, ' ')}</strong>`)
         .addTo(map3D);
     });
   });
 
   switchTo2D();
+
+  // Colocar/arrastrar marcador dinámico
+  map2D.on('click', e => {
+    const { lat, lng } = e.latlng;
+    placeOrMoveMarker([lat, lng]);
+    updateURL(lat, lng, $("origin").value);
+  });
+
+  // Leer URL params
+  checkURLParams();
 }
 
-// Click en POI
-function handlePOIClick(key){
+
+// handlePOIClick()
+
+function handlePOIClick(key) {
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
 
-// Controles
-function initControls(){
+
+// initControls()
+
+function initControls() {
   fillSelect("origin");
   fillSelect("destination");
 
-  $("searchBox").addEventListener("input", debounce(()=>{
-    const txt=$("searchBox").value.toLowerCase();
-    ["origin","destination"].forEach(id=>{
-      Array.from($(id).options).forEach(o=>{
-        o.style.display = o.text.toLowerCase().includes(txt)?'block':'none';
+  $("searchBox").addEventListener("input", debounce(() => {
+    const txt = $("searchBox").value.toLowerCase();
+    ["origin", "destination"].forEach(id => {
+      Array.from($(id).options).forEach(o => {
+        o.style.display = o.text.toLowerCase().includes(txt) ? 'block' : 'none';
       });
     });
-  },100));
+  }, 100));
 
   $("btnGo").onclick       = drawRoute;
   $("btn2D").onclick       = switchTo2D;
   $("btn3D").onclick       = switchTo3D;
   $("btnStartGPS").onclick = startTracking;
-  $("btnFollow").onclick   = ()=>{
-    following=true;
-    if(userMarker2D && getComputedStyle($("map2D")).display!=="none")
-      map2D.panTo(userMarker2D.getLatLng(),{animate:true});
-    if(userMarker3D && getComputedStyle($("map3D")).display!=="none")
-      map3D.setCenter(userMarker3D.getLngLat().toArray());
+  $("btnFollow").onclick   = () => {
+    following = true;
+    if (userMarker2D) map2D.panTo(userMarker2D.getLatLng(), { animate: true });
+    if (userMarker3D) map3D.setCenter(userMarker3D.getLngLat().toArray());
   };
 
-  // Modals
-  $("alert-close").onclick          = ()=> $("alertModal").classList.remove("active");
-  $("btnAddInfo").onclick           = ()=>{$("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active");};
-  $("btnCancelInfo").onclick        = ()=>{$("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active");};
-  $("hiddenFileInput").onchange     = ()=>{
-    const f=$("hiddenFileInput").files[0];
-    if(f){
-      const r=new FileReader();
-      r.onload=e=>$("preview").src=e.target.result;
-      r.readAsDataURL(f);
+  // Navegar al marcador dinámico
+  $("btnNavMarker").onclick = () => {
+    if (!dynamicMarker) { showModal('Put a dynamic marker first.'); return; }
+    const dest = dynamicMarker.getLatLng(), originKey = $("origin").value;
+    if (originKey === 'gps') {
+      if (!navigator.geolocation) { showModal('GPS not supported'); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => runRoute([[pos.coords.latitude, pos.coords.longitude]], [dest.lat, dest.lng], 'gps'),
+        err => showModal('Error GPS: ' + err.message)
+      );
+    } else if (locations[originKey]) {
+      runRoute([locations[originKey]], [dest.lat, dest.lng], originKey);
+    } else showModal('Select an origin.');
+  };
+
+  // Share button
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'btnShare';
+  shareBtn.textContent = 'Share';
+  shareBtn.onclick = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => showModal('Link copied to clipboard'));
+  };
+  $("controls").appendChild(shareBtn);
+
+  // Modales e IndexedDB
+  $("alert-close").onclick       = () => $("alertModal").classList.remove("active");
+  $("btnAddInfo").onclick        = () => { $("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active"); };
+  $("btnCancelInfo").onclick     = () => { $("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active"); };
+  $("hiddenFileInput").onchange  = () => {
+    const f = $("hiddenFileInput").files[0];
+    if (f) {
+      const reader = new FileReader();
+      reader.onload = e => $("preview").src = e.target.result;
+      reader.readAsDataURL(f);
     }
   };
-  $("btnSaveInfo").onclick          = saveInfo;
-  $("btnViewInfos").onclick         = ()=>{ $("infoModalOverlay").classList.add("active"); $("infoListPanel").classList.add("active"); refreshInfoList(); };
-  $("btnCloseInfoPanel").onclick    = ()=>{ $("infoModalOverlay").classList.remove("active"); $("infoListPanel").classList.remove("active"); };
-  $("infoModalOverlay").onclick     = e=>{
-    if(e.target=== $("infoModalOverlay")){
+  $("btnSaveInfo").onclick       = saveInfo;
+  $("btnViewInfos").onclick      = () => { $("infoModalOverlay").classList.add("active"); $("infoListPanel").classList.add("active"); refreshInfoList(); };
+  $("btnCloseInfoPanel").onclick = () => { $("infoModalOverlay").classList.remove("active"); $("infoListPanel").classList.remove("active"); };
+  $("infoModalOverlay").onclick  = e => {
+    if (e.target === $("infoModalOverlay")) {
       $("infoModalOverlay").classList.remove("active");
       $("infoListPanel").classList.remove("active");
     }
   };
 
-  // IndexedDB
-  const req = indexedDB.open("CampusAppDB",1);
-  req.onerror     = e=>console.error("DB error",e);
-  req.onsuccess   = e=>{ db=e.target.result; loadAllMarkers(); };
-  req.onupgradeneeded = e=>{
-    const store=e.target.result.createObjectStore("infos",{keyPath:"id",autoIncrement:true});
-    store.createIndex("by_date","timestamp");
+  const req = indexedDB.open("CampusAppDB", 1);
+  req.onerror = e => console.error("DB error", e);
+  req.onsuccess = e => { db = e.target.result; loadAllMarkers(); };
+  req.onupgradeneeded = e => {
+    const store = e.target.result.createObjectStore("infos", { keyPath: "id", autoIncrement: true });
+    store.createIndex("by_date", "timestamp");
   };
 
-  // Ajuste dinámico del panel de pasos
   window.addEventListener('resize', adjustDirectionsPosition);
 }
 
-// Rellena selects
-function fillSelect(id){
-  const sel=$(id);
-  sel.innerHTML=`<option value="">— select —</option><option value="gps">My Location</option>`;
-  const groups={
-    General:["Entrance","Library","Cafeteria","GYM","Villa"],
-    Buildings:Object.keys(locations).filter(k=>/^Building/.test(k)||/^Observatoire/.test(k)),
-    Departments:Object.keys(locations).filter(k=>k.startsWith("Département")),
-    Residences:Object.keys(locations).filter(k=>k.startsWith("Résidence")),
-    Labs:Object.keys(locations).filter(k=>k.startsWith("Laboratory"))
+
+// fillSelect()
+
+function fillSelect(id) {
+  const sel = $(id);
+  sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
+  const groups = {
+    General: ["Entrance", "Library", "Cafeteria", "GYM", "Villa"],
+    Buildings: Object.keys(locations).filter(k => /^Building/.test(k) || /^Observatoire/.test(k)),
+    Departments: Object.keys(locations).filter(k => k.startsWith("Département")),
+    Residences: Object.keys(locations).filter(k => k.startsWith("Résidence")),
+    Labs: Object.keys(locations).filter(k => k.startsWith("Laboratory"))
   };
-  for(const label in groups){
-    const og=document.createElement("optgroup");
-    og.label=label;
-    groups[label].forEach(key=>{
-      const o=document.createElement("option");
-      o.value=key;
-      o.textContent=key.replace(/_/g," ");
+  for (const label in groups) {
+    const og = document.createElement("optgroup");
+    og.label = label;
+    groups[label].forEach(key => {
+      const o = document.createElement("option");
+      o.value = key;
+      o.textContent = key.replace(/_/g, " ");
       og.appendChild(o);
     });
     sel.appendChild(og);
   }
 }
 
-// Dibuja ruta
-function drawRoute(){
-  const o=$("origin").value, d=$("destination").value;
-  if(!o) return showModal("Select origin");
-  if(!d) return showModal("Select destination");
-  if(routingControl) map2D.removeControl(routingControl);
 
-  const origin = o==="gps"
-    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"),null))
+// drawRoute()
+
+function drawRoute() {
+  const o = $("origin").value, d = $("destination").value;
+  if (!o) return showModal("Select origin");
+  if (!d) return showModal("Select destination");
+  if (routingControl) map2D.removeControl(routingControl);
+
+  const origin = o === "gps"
+    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
     : L.latLng(...locations[o]);
-  if(!origin) return;
+  if (!origin) return;
   const dest = L.latLng(...locations[d]);
 
   routingControl = L.Routing.control({
-    router:L.Routing.osrmv1({
-      serviceUrl:"https://routing.openstreetmap.de/routed-foot/route/v1",
-      profile:"foot"
+    router: L.Routing.osrmv1({
+      serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1", profile: "foot"
     }),
-    waypoints:[origin,dest],
-    fitSelectedRoutes:true,
-    show:false,
-    createMarker:()=>null,
-    lineOptions:{styles:[{weight:5,color:"#0055A4"}]}
+    waypoints: [origin, dest],
+    fitSelectedRoutes: true,
+    show: false,
+    createMarker: () => null,
+    lineOptions: { styles: [{ weight: 5, color: "#0055A4" }] }
   })
-  .on("routesfound", e=>{
+  .on("routesfound", e => {
     instructions = e.routes[0].instructions.slice();
-    if(window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
     window._stepsCtrl = new StepsControl();
     map2D.addControl(window._stepsCtrl);
     adjustDirectionsPosition();
-    syncRouteTo3D(e.routes[0].coordinates.map(c=>[c.lng,c.lat]));
   })
-  .on("routingerror", ()=> showModal("Routing error"))
+  .on("routingerror", () => showModal("Routing error"))
   .addTo(map2D);
 }
 
-// Ajusta posición del panel
-function adjustDirectionsPosition(){
+
+// adjustDirectionsPosition()
+
+function adjustDirectionsPosition() {
   const dir = document.querySelector('.leaflet-steps');
-  if(!dir) return;
-  const ctrl = document.getElementById('controls');
-  const ctrlRect = ctrl.getBoundingClientRect();
-  const mapRect  = document.getElementById('map2D').getBoundingClientRect();
-  dir.style.top   = (ctrlRect.bottom - mapRect.top + 10) + 'px';
+  if (!dir) return;
+  const ctrlRect = $("controls").getBoundingClientRect();
+  const mapRect = $("map2D").getBoundingClientRect();
+  dir.style.top = (ctrlRect.bottom - mapRect.top + 10) + 'px';
   dir.style.right = '10px';
 }
 
-// Sincroniza ruta 3D
-function syncRouteTo3D(coords){
-  const data={type:"Feature",geometry:{type:"LineString",coordinates:coords}};
-  if(map3D.getSource("route3D")){
-    map3D.getSource("route3D").setData(data);
+
+// GPS Position Handling
+
+function handlePosition(p) {
+  const { latitude: lat, longitude: lon, accuracy, altitude: alt, altitudeAccuracy: acc } = p.coords;
+  if (accuracy > 100) return;
+  if (first) {
+    smoothLat = lat; smoothLon = lon; first = false;
+    if (acc < 5) baseAlt = alt;
   } else {
-    map3D.addSource("route3D",{type:"geojson",data});
-    map3D.addLayer({
-      id:"route3D-layer", type:"line", source:"route3D",
-      paint:{"line-color":"#FFD700","line-width":5}
-    });
+    const α = 0.4;
+    smoothLat = smoothLat * (1 - α) + lat * α;
+    smoothLon = smoothLon * (1 - α) + lon * α;
   }
-}
+  if (++frameCnt % 3 !== 0) return;
 
-// Geolocalización
-function handlePosition(p){
-  const {latitude:lat,longitude:lon,accuracy,altitude:alt,altitudeAccuracy:acc} = p.coords;
-  if(accuracy>100) return;
-  if(first){ smoothLat=lat; smoothLon=lon; first=false; if(acc<5) baseAlt=alt; }
-  else { const α=0.4; smoothLat=smoothLat*(1-α)+lat*α; smoothLon=smoothLon*(1-α)+lon*α; }
-  if(++frameCnt%3!==0) return;
-
-  const pos2D = [smoothLat,smoothLon], pos3D=[smoothLon,smoothLat];
-
-  if(getComputedStyle($("map2D")).display!=="none"){
-    if(!userMarker2D) userMarker2D=L.marker(pos2D).addTo(map2D);
-    else             userMarker2D.setLatLng(pos2D);
-    if(following)    map2D.panTo(pos2D,{animate:true});
+  const pos2D = [smoothLat, smoothLon], pos3D = [smoothLon, smoothLat];
+  if (getComputedStyle($("map2D")).display !== "none") {
+    if (!userMarker2D) userMarker2D = L.marker(pos2D).addTo(map2D);
+    else userMarker2D.setLatLng(pos2D);
+    if (following) map2D.panTo(pos2D, { animate: true });
     highlightStep();
   }
-
-  if(getComputedStyle($("map3D")).display!=="none"){
-    if(!userMarker3D) userMarker3D=new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
-    else              userMarker3D.setLngLat(pos3D);
-    if(following)     map3D.setCenter(pos3D);
+  if (getComputedStyle($("map3D")).display !== "none") {
+    if (!userMarker3D) userMarker3D = new maplibregl.Marker().setLngLat(pos3D).addTo(map3D);
+    else userMarker3D.setLngLat(pos3D);
+    if (following) map3D.setCenter(pos3D);
   }
 
-  let floor="Unknown";
-  if(baseAlt!=null && acc<5){
-    const d=alt-baseAlt;
-    floor=d<2?"Ground":d<4?"First":"Upper";
+  let floor = "Unknown";
+  if (baseAlt != null && acc < 5) {
+    const d = alt - baseAlt;
+    floor = d < 2 ? "Ground" : d < 4 ? "First" : "Upper";
   }
-  $("info").innerHTML=`
+  $("info").innerHTML = `
     <p>
       <strong>Lat:</strong> ${smoothLat.toFixed(6)}<br>
       <strong>Lon:</strong> ${smoothLon.toFixed(6)}<br>
-      <strong>Alt:</strong> ${alt!=null?alt.toFixed(1)+" m":"—"}<br>
+      <strong>Alt:</strong> ${alt != null ? alt.toFixed(1) + " m" : "—"}<br>
       <strong>Acc:</strong> ±${accuracy.toFixed(1)} m<br>
       <strong>Floor:</strong> ${floor}
     </p>`;
 }
 
-function startTracking(){
-  first=true; frameCnt=0;
-  if(watchId) navigator.geolocation.clearWatch(watchId);
-  navigator.geolocation.getCurrentPosition(handlePosition,()=>{},{
-    enableHighAccuracy:true, timeout:5000, maximumAge:0
+function startTracking() {
+  first = true; frameCnt = 0;
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  navigator.geolocation.getCurrentPosition(handlePosition, () => {}, {
+    enableHighAccuracy: true, timeout: 5000, maximumAge: 0
   });
   watchId = navigator.geolocation.watchPosition(
     handlePosition,
-    err=>showModal(`GPS error: ${err.message}`),
-    { enableHighAccuracy:true, timeout:5000, maximumAge:0 }
+    err => showModal(`GPS error: ${err.message}`),
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
   );
 }
 
-function highlightStep(){
-  if(!userMarker2D || !instructions.length) return;
-  const pt = turf.point([userMarker2D.getLatLng().lng,userMarker2D.getLatLng().lat]);
-  let best=0, bd=Infinity;
-  instructions.forEach((inst,i)=>{
-    if(!inst.latLng) return;
-    const d = turf.distance(pt,turf.point([inst.latLng.lng,inst.latLng.lat]),{units:"meters"});
-    if(d<bd){ bd=d; best=i; }
+function highlightStep() {
+  if (!userMarker2D || !instructions.length) return;
+  const pt = turf.point([userMarker2D.getLatLng().lng, userMarker2D.getLatLng().lat]);
+  let best = 0, bd = Infinity;
+  instructions.forEach((inst, i) => {
+    if (!inst.latLng) return;
+    const d = turf.distance(pt, turf.point([inst.latLng.lng, inst.latLng.lat]), { units: "meters" });
+    if (d < bd) { bd = d; best = i; }
   });
-  instructions.forEach((_,i)=>{
+  instructions.forEach((_, i) => {
     const el = document.getElementById(`step-${i}`);
-    if(el) el.classList.toggle("current", i===best);
+    if (el) el.classList.toggle("current", i === best);
   });
 }
 
-function switchTo2D(){
-  $("map3D").style.display="none";
-  $("map2D").style.display="block";
+
+// Switch Views
+
+function switchTo2D() {
+  $("map3D").style.display = "none";
+  $("map2D").style.display = "block";
   map2D.invalidateSize();
 }
-function switchTo3D(){
-  $("map2D").style.display="none";
-  $("map3D").style.display="block";
+function switchTo3D() {
+  $("map2D").style.display = "none";
+  $("map3D").style.display = "block";
   map3D.resize();
 }
 
-function loadAllMarkers(){
-  const tx=db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess=e=>{
-    infoMarkers.forEach(m=>m.remove());
-    infoMarkers=[];
+
+// IndexedDB & Info Markers
+
+function loadAllMarkers() {
+  const tx = db.transaction("infos", "readonly");
+  tx.objectStore("infos").getAll().onsuccess = e => {
+    infoMarkers.forEach(m => m.remove());
+    infoMarkers = [];
     e.target.result.forEach(addMarkerToMap);
   };
 }
 
-function addMarkerToMap(info){
-  const lng=parseFloat(info.lng), lat=parseFloat(info.lat);
-  if(isNaN(lng)||isNaN(lat)){
-    console.warn("Coords inválidas",info);
-    return;
-  }
-  const el=document.createElement("div");
-  el.className="info-marker";
+function addMarkerToMap(info) {
+  const lng = parseFloat(info.lng), lat = parseFloat(info.lat);
+  if (isNaN(lng) || isNaN(lat)) return;
+  const el = document.createElement("div");
+  el.className = "info-marker";
   new maplibregl.Marker(el)
-    .setLngLat([lng,lat])
-    .setPopup(new maplibregl.Popup({offset:25})
+    .setLngLat([lng, lat])
+    .setPopup(new maplibregl.Popup({ offset: 25 })
       .setHTML(`
         <h3>${info.title}</h3>
         <div class="info-meta">
@@ -425,41 +464,37 @@ function addMarkerToMap(info){
           Lat:${lat.toFixed(6)}, Lon:${lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
-        ${info.image?`<img src="${info.image}" class="info-image" alt="${info.title}">`:''}
+        ${info.image ? `<img src="${info.image}" class="info-image" alt="${info.title}">` : ''}
       `))
     .addTo(map3D);
   infoMarkers.push(el);
 }
 
-function saveInfo(){
-  const title=$("infoTitle").value.trim();
-  const description=$("infoDescription").value.trim();
-  const type=$("infoMarkerType").value;
-  if(!title||!description) return alert("Rellena título y descripción.");
-
-  const image=$("preview").src||null;
-  const center=map3D.getCenter();
-  const lng=center.lng;
-  const lat=center.lat;
-  const timestamp=Date.now();
-
-  const tx=db.transaction("infos","readwrite");
-  tx.objectStore("infos").add({title,description,type,image,lng,lat,timestamp})
-    .onsuccess=()=>{
+function saveInfo() {
+  const title = $("infoTitle").value.trim();
+  const description = $("infoDescription").value.trim();
+  const type = $("infoMarkerType").value;
+  if (!title || !description) { showModal("Write title and description."); return; }
+  const image = $("preview").src || null;
+  const center = map3D.getCenter();
+  const lng = center.lng, lat = center.lat, timestamp = Date.now();
+  const tx = db.transaction("infos", "readwrite");
+  tx.objectStore("infos").add({ title, description, type, image, lng, lat, timestamp })
+    .onsuccess = () => {
       $("infoFormOverlay").classList.remove("active");
       $("infoForm").classList.remove("active");
-      $("infoTitle").value="";
-      $("infoDescription").value="";
-      $("preview").src="";
+      $("infoTitle").value = "";
+      $("infoDescription").value = "";
+      $("preview").src = "";
       loadAllMarkers();
     };
 }
 
-function refreshInfoList(){
-  const tx=db.transaction("infos","readonly");
-  tx.objectStore("infos").getAll().onsuccess=e=>{
-    const list=$("infoList");
-    list.innerHTML=e.target.result.map(info=>`
+function refreshInfoList() {
+  const tx = db.transaction("infos", "readonly");
+  tx.objectStore("infos").getAll().onsuccess = e => {
+    const list = $("infoList");
+    list.innerHTML = e.target.result.map(info => `
       <div class="info-item">
         <h3>${info.title}</h3>
         <div class="info-meta">
@@ -467,30 +502,114 @@ function refreshInfoList(){
           Lat:${info.lat.toFixed(6)}, Lon:${info.lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
-        ${info.image?`<img src="${info.image}" class="info-image" alt="${info.title}">`:''}
+        ${info.image ? `<img src="${info.image}" class="info-image" alt="${info.title}">` : ''}
         <button class="btn-delete" data-id="${info.id}">Delete</button>
       </div>
     `).join('');
-    list.querySelectorAll(".btn-delete").forEach(btn=>{
-      btn.onclick=()=>{
-        const id=Number(btn.dataset.id);
-        db.transaction("infos","readwrite").objectStore("infos").delete(id)
-          .onsuccess=refreshInfoList;
+    list.querySelectorAll(".btn-delete").forEach(btn => {
+      btn.onclick = () => {
+        const id = Number(btn.dataset.id);
+        db.transaction("infos", "readwrite").objectStore("infos").delete(id)
+          .onsuccess = refreshInfoList;
       };
     });
   };
 }
 
+
 // Utilities
-function debounce(fn,delay=100){
+
+function debounce(fn, delay = 100) {
   let t;
-  return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),delay);};
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delay);
+  };
 }
 
-function showModal(msg){
-  $("alert-message").textContent=msg;
+function showModal(msg) {
+  $("alert-message").textContent = msg;
   $("alertModal").classList.add("active");
 }
 
+
+// Dynamic Marker & URL
+
+function placeOrMoveMarker([lat, lon]) {
+  if (!dynamicMarker) {
+    dynamicMarker = L.marker([lat, lon], {
+      draggable: true,
+      icon: L.divIcon({
+        className: 'custom-dynamic-marker',
+        html: '<div class="custom-icon"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      })
+    }).addTo(map2D);
+    dynamicMarker.on('moveend', e => {
+      const p = e.target.getLatLng();
+      updateURL(p.lat, p.lng, $("origin").value);
+    });
+  } else {
+    dynamicMarker.setLatLng([lat, lon]);
+  }
+}
+
+function updateURL(lat, lon, originKey) {
+  const u = new URL(window.location);
+  u.searchParams.set('lat', lat.toFixed(6));
+  u.searchParams.set('lon', lon.toFixed(6));
+  if (originKey) u.searchParams.set('origin', originKey);
+  window.history.replaceState({}, '', u);
+}
+
+function checkURLParams() {
+  const p = new URLSearchParams(window.location.search);
+  const lat = parseFloat(p.get('lat')), lon = parseFloat(p.get('lon')), ok = p.get('origin');
+  if (!isNaN(lat) && !isNaN(lon)) {
+    placeOrMoveMarker([lat, lon]);
+    map2D.setView([lat, lon], map2D.getZoom());
+    if (ok) {
+      $("origin").value = ok;
+      if (ok === 'gps') {
+        navigator.geolocation.getCurrentPosition(pos => {
+          runRoute([[pos.coords.latitude, pos.coords.longitude]], [lat, lon], 'gps');
+        });
+      } else runRoute([locations[ok]], [lat, lon], ok);
+    }
+  }
+}
+
+
+// runRoute()
+
+function runRoute(origins, destArr, originKey) {
+  if (navControl) map2D.removeControl(navControl);
+  navControl = L.Routing.control({
+    router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
+    waypoints: [
+      L.latLng(origins[0][0], origins[0][1]),
+      L.latLng(destArr[0], destArr[1])
+    ],
+    fitSelectedRoutes: true,
+    show: false,
+    createMarker: () => null,
+    lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
+  })
+  .on('routesfound', e => {
+    instructions = e.routes[0].instructions;
+    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+    window._stepsCtrl = new StepsControl();
+    map2D.addControl(window._stepsCtrl);
+    adjustDirectionsPosition();
+  })
+  .on('routingerror', () => showModal('Error to calculate route.'))
+  .addTo(map2D);
+
+  updateURL(destArr[0], destArr[1], originKey);
+}
+
+
 // Launch
+
 document.addEventListener("DOMContentLoaded", initApp);

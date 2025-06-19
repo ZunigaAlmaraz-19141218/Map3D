@@ -55,6 +55,20 @@ body {
 }
 #controls label { color: var(--color-primary); font-weight: 600; }
 
+/* Navigate to Marker button */
+#btnNavMarker {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  border: none;
+  padding: clamp(6px, 1vw, 12px);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background var(--transition-speed);
+}
+#btnNavMarker:hover {
+  background: #e6c200;
+}
+
 /* Maps */
 #map2D,
 #map3D {
@@ -331,7 +345,6 @@ body {
 /* Responsive: make steps panel full-width on small screens */
 @media (max-width: 600px) {
   .leaflet-steps {
-    /* wider and taller so it’s usable on phones */
     width: clamp(220px, 90%, 350px) !important;
     max-height: 25vh !important;
     border-radius: 0 0 8px 8px !important;
@@ -350,13 +363,17 @@ body {
   #controls button {
     font-size: clamp(10px, 1.2vw, 14px);
     padding: clamp(4px, 0.5vw, 8px);
-  }
+  }  
 
   #map2D,
   #map3D {
     height: clamp(200px, 50vh, 400px);
   }
 }
+
+/* Override .leaflet-steps: always white and opaque */
+/* …y el resto de tu CSS original sin cambios… */
+
 
 /* Override .leaflet-steps: always white and opaque */
 .leaflet-steps {
@@ -492,4 +509,17 @@ body {
   background-color: var(--bg-directions) !important;
   border-radius: 8px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+/* Asegura que el marcador dinámico destaque */
+.custom-dynamic-marker {
+  z-index: 700 !important;
+}
+
+.custom-dynamic-marker .custom-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 69, 0, 0.9); /* color naranja fuerte */
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }

@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -40,9 +41,13 @@
     <select id="destination" aria-label="Select destination"></select>
 
     <button id="btnGo">Go</button>
+    <!-- Nuevo botón para navegación al marcador dinámico -->
+    <button id="btnNavMarker">Navigate to Marker</button>
+
     <button id="btnAddInfo">Add Information</button>
     <button id="btnViewInfos">View Information</button>
   </div>
+
 
   <!-- Alert Modal -->
   <div id="alertModal" class="modal-overlay">
@@ -86,12 +91,12 @@
   <div id="infoListPanel" class="modal-content info-modal">
     <div class="modal-header">
       <h2>Saved Information</h2>
-      <button id="btnCloseInfoPanel" class="modal-close" aria-label="Cerrar">&times;</button>
+      <button id="btnCloseInfoPanel" class="modal-close" aria-label="Close">&times;</button>
     </div>
     <div id="infoList" class="info-list"></div>
   </div>
 
-  <!-- Maps -->
+  <!-- Mapas -->
   <div id="map2D" role="region" aria-label="Campus Map"></div>
   <div id="map3D" role="region" aria-label="Campus 3D Map"></div>
 

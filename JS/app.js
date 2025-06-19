@@ -1,4 +1,5 @@
 // app.js
+
 // Datos de Campus & POIs
 const locations = {
   Entrance:      [43.225018, 0.052059],
@@ -34,15 +35,16 @@ const locations = {
   Laboratory_L3: [43.226203, 0.050033],
   Laboratory_L4: [43.226383, 0.050033]
 };
+
 // Globals
-let map2D, map3D, routingControl, instructions = [];
-let dynamicMarker = null, navControl = null;
-let userMarker2D = null, userMarker3D = null;
-let watchId = null, following = true;
-let smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
+let map2D, map3D, routingControl, navControl, instructions = [];
+let dynamicMarker = null, userMarker2D = null, userMarker3D = null;
+let watchId = null, following = true, smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
 let db, infoMarkers = [];
+
 // Shortcut
 const $ = id => document.getElementById(id);
+
 // Tests
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function runTests() {
@@ -50,20 +52,18 @@ function runTests() {
   assert($("destination"), "Missing #destination");
   assert($("infoTitle") && $("infoDescription"), "Missing info inputs");
 }
-// stepsControl
+
+// Custom StepsControl (lista abierta por defecto)
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
-    const div = L.DomUtil.create('div', 'leaflet-steps collapsed');
+    const div = L.DomUtil.create('div', 'leaflet-steps');
     div.innerHTML = `
-      <h3 role="button" aria-expanded="false">
-        Steps (${instructions.length})
-        <span class="toggle-icon">▼</span>
+      <h3 role="button" aria-expanded="true">
+        Steps (${instructions.length}) <span class="toggle-icon">▲</span>
       </h3>
       <ol>
-        ${instructions.map((inst, i) =>
-          `<li id="step-${i}">${inst.text}</li>`
-        ).join('')}
+        ${instructions.map((inst, i) => `<li id="step-${i}">${inst.text}</li>`).join('')}
       </ol>`;
     L.DomEvent.disableClickPropagation(div);
     const header = div.querySelector('h3');
@@ -75,13 +75,14 @@ const StepsControl = L.Control.extend({
     return div;
   }
 });
-// Initialize the app
 
+// Initialize the app
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
+
 // initMaps()
 function initMaps() {
   const campusBounds = [[43.2235, 0.0459], [43.2280, 0.0536]];
@@ -104,6 +105,7 @@ function initMaps() {
     secondaryAreaUnit: 'hectares'
   }).addTo(map2D);
   map2D.on('dragstart zoomstart', () => following = false);
+
   // Cluster de POIs
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key, coords]) => {
@@ -112,6 +114,7 @@ function initMaps() {
     cluster.addLayer(m);
   });
   map2D.addLayer(cluster);
+
   // 3D map
   map3D = new maplibregl.Map({
     container: "map3D",
@@ -150,6 +153,7 @@ function initMaps() {
         .addTo(map3D);
     });
   });
+
   switchTo2D();
 
   // Place/move dynamic marker
@@ -158,14 +162,17 @@ function initMaps() {
     placeOrMoveMarker([lat, lng]);
     updateURL(lat, lng, $("origin").value);
   });
+
   // Read URL params
   checkURLParams();
 }
+
 // handlePOIClick()
 function handlePOIClick(key) {
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
+
 // initControls()
 function initControls() {
   fillSelect("origin");
@@ -187,6 +194,7 @@ function initControls() {
     if (userMarker2D) map2D.panTo(userMarker2D.getLatLng(), { animate: true });
     if (userMarker3D) map3D.setCenter(userMarker3D.getLngLat().toArray());
   };
+
   // Navigate to dynamic marker
   $("btnNavMarker").onclick = () => {
     if (!dynamicMarker) { showModal('Put a dynamic marker first.'); return; }
@@ -201,6 +209,7 @@ function initControls() {
       runRoute([locations[originKey]], [dest.lat, dest.lng], originKey);
     } else showModal('Select an origin.');
   };
+
   // Share button
   const shareBtn = document.createElement('button');
   shareBtn.id = 'btnShare';
@@ -210,7 +219,8 @@ function initControls() {
       .then(() => showModal('Link copied to clipboard'));
   };
   $("controls").appendChild(shareBtn);
-  // Modals and IndexedDB
+
+  // Modals and IndexedDB setup (unchanged)
   $("alert-close").onclick       = () => $("alertModal").classList.remove("active");
   $("btnAddInfo").onclick        = () => { $("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active"); };
   $("btnCancelInfo").onclick     = () => { $("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active"); };
@@ -241,13 +251,14 @@ function initControls() {
 
   window.addEventListener('resize', adjustDirectionsPosition);
 }
+
 // fillSelect()
 function fillSelect(id) {
   const sel = $(id);
   sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
   const groups = {
     General: ["Entrance", "Library", "Cafeteria", "GYM", "Villa"],
-    Buildings: Object.keys(locations).filter(k => /^Building/.test(k) || /^Observatoire/.test(k)),
+    Buildings: Object.keys(locations).filter(k => /^Building/.test(k) || k === "Observatoire"),
     Departments: Object.keys(locations).filter(k => k.startsWith("Département")),
     Residences: Object.keys(locations).filter(k => k.startsWith("Résidence")),
     Labs: Object.keys(locations).filter(k => k.startsWith("Laboratory"))
@@ -264,36 +275,92 @@ function fillSelect(id) {
     sel.appendChild(og);
   }
 }
-// drawRoute()
+
+// drawRoute() — reutiliza routingControl en lugar de eliminarlo
 function drawRoute() {
   const o = $("origin").value, d = $("destination").value;
   if (!o) return showModal("Select origin");
   if (!d) return showModal("Select destination");
-  if (routingControl) map2D.removeControl(routingControl);
+
   const origin = o === "gps"
-    ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
+    ? (userMarker2D?.getLatLng() || (showModal("Start GPS first"), null))
     : L.latLng(...locations[o]);
   if (!origin) return;
   const dest = L.latLng(...locations[d]);
-  routingControl = L.Routing.control({
-    router: L.Routing.osrmv1({
-      serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1", profile: "foot"
-    }),
-    waypoints: [origin, dest],
-    fitSelectedRoutes: true,
-    show: false,
-    createMarker: () => null,
-    lineOptions: { styles: [{ weight: 5, color: "#0055A4" }] }
-  })
-  .on("routesfound", e => {
-    instructions = e.routes[0].instructions.slice();
-    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
-    window._stepsCtrl = new StepsControl();
-    map2D.addControl(window._stepsCtrl);
-    adjustDirectionsPosition();
-  })
-  .on("routingerror", () => showModal("Routing error"))
-  .addTo(map2D);
+
+  if (!routingControl) {
+    routingControl = L.Routing.control({
+      router: L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1" }),
+      waypoints: [origin, dest],
+      fitSelectedRoutes: true,
+      show: false,
+      createMarker: () => null,
+      lineOptions: { styles: [{ weight: 5, color: "#0055A4" }] }
+    })
+    .on('routesfound', e => {
+      instructions = e.routes[0].instructions.slice();
+      if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+      window._stepsCtrl = new StepsControl();
+      map2D.addControl(window._stepsCtrl);
+      adjustDirectionsPosition();
+
+      // También dibuja en 3D
+      draw3DRoute(e.routes[0].coordinates);
+    })
+    .on('routingerror', () => showModal("Routing error"))
+    .addTo(map2D);
+  } else {
+    routingControl.setWaypoints([origin, dest]);
+  }
+}
+
+// draw3DRoute() — nueva función para limpiar y dibujar la ruta en el mapa 3D
+function draw3DRoute(routeCoords) {
+  if (map3D.getLayer('routeLine')) map3D.removeLayer('routeLine');
+  if (map3D.getSource('route')) map3D.removeSource('route');
+
+  const coords = routeCoords.map(ll => [ll.lng, ll.lat]);
+  const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
+
+  map3D.addSource('route', { type: 'geojson', data: geojson });
+  map3D.addLayer({
+    id: 'routeLine', type: 'line', source: 'route',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#0055A4', 'line-width': 4 }
+  });
+}
+
+// runRoute() — igual que drawRoute() pero para la navegación al marcador dinámico
+function runRoute(origins, destArr, originKey) {
+  const wp = [
+    L.latLng(origins[0][0], origins[0][1]),
+    L.latLng(destArr[0], destArr[1])
+  ];
+
+  if (!navControl) {
+    navControl = L.Routing.control({
+      router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
+      waypoints: wp,
+      fitSelectedRoutes: true,
+      show: false,
+      createMarker: () => null,
+      lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
+    })
+    .on('routesfound', e => {
+      instructions = e.routes[0].instructions.slice();
+      if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+      window._stepsCtrl = new StepsControl();
+      map2D.addControl(window._stepsCtrl);
+      adjustDirectionsPosition();
+      draw3DRoute(e.routes[0].coordinates);
+    })
+    .on('routingerror', () => showModal('Error to calculate route.'))
+    .addTo(map2D);
+  } else {
+    navControl.setWaypoints(wp);
+  }
+
+  updateURL(destArr[0], destArr[1], originKey);
 }
 // adjustDirectionsPosition()
 function adjustDirectionsPosition() {

@@ -1,8 +1,5 @@
 // app.js
-
-
 // Datos de Campus & POIs
-
 const locations = {
   Entrance:      [43.225018, 0.052059],
   Library:       [43.224945, 0.051151],
@@ -37,33 +34,23 @@ const locations = {
   Laboratory_L3: [43.226203, 0.050033],
   Laboratory_L4: [43.226383, 0.050033]
 };
-
-
 // Globals
-
 let map2D, map3D, routingControl, instructions = [];
 let dynamicMarker = null, navControl = null;
 let userMarker2D = null, userMarker3D = null;
 let watchId = null, following = true;
 let smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
 let db, infoMarkers = [];
-
 // Shortcut
 const $ = id => document.getElementById(id);
-
-
 // Tests
-
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function runTests() {
   assert($("origin"), "Missing #origin");
   assert($("destination"), "Missing #destination");
   assert($("infoTitle") && $("infoDescription"), "Missing info inputs");
 }
-
-
-// Control para pasos
-
+// stepsControl
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
@@ -88,22 +75,16 @@ const StepsControl = L.Control.extend({
     return div;
   }
 });
-
-
-// Inicialización
+// Initialize the app
 
 function initApp() {
   runTests();
   initMaps();
   initControls();
 }
-
-
 // initMaps()
-
 function initMaps() {
   const campusBounds = [[43.2235, 0.0459], [43.2280, 0.0536]];
-
   // 2D map
   map2D = L.map("map2D", {
     center: [43.22476, 0.05044],
@@ -123,7 +104,6 @@ function initMaps() {
     secondaryAreaUnit: 'hectares'
   }).addTo(map2D);
   map2D.on('dragstart zoomstart', () => following = false);
-
   // Cluster de POIs
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key, coords]) => {
@@ -132,7 +112,6 @@ function initMaps() {
     cluster.addLayer(m);
   });
   map2D.addLayer(cluster);
-
   // 3D map
   map3D = new maplibregl.Map({
     container: "map3D",
@@ -171,35 +150,26 @@ function initMaps() {
         .addTo(map3D);
     });
   });
-
   switchTo2D();
 
-  // Colocar/arrastrar marcador dinámico
+  // Place/move dynamic marker
   map2D.on('click', e => {
     const { lat, lng } = e.latlng;
     placeOrMoveMarker([lat, lng]);
     updateURL(lat, lng, $("origin").value);
   });
-
-  // Leer URL params
+  // Read URL params
   checkURLParams();
 }
-
-
 // handlePOIClick()
-
 function handlePOIClick(key) {
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
-
-
 // initControls()
-
 function initControls() {
   fillSelect("origin");
   fillSelect("destination");
-
   $("searchBox").addEventListener("input", debounce(() => {
     const txt = $("searchBox").value.toLowerCase();
     ["origin", "destination"].forEach(id => {
@@ -208,7 +178,6 @@ function initControls() {
       });
     });
   }, 100));
-
   $("btnGo").onclick       = drawRoute;
   $("btn2D").onclick       = switchTo2D;
   $("btn3D").onclick       = switchTo3D;
@@ -218,8 +187,7 @@ function initControls() {
     if (userMarker2D) map2D.panTo(userMarker2D.getLatLng(), { animate: true });
     if (userMarker3D) map3D.setCenter(userMarker3D.getLngLat().toArray());
   };
-
-  // Navegar al marcador dinámico
+  // Navigate to dynamic marker
   $("btnNavMarker").onclick = () => {
     if (!dynamicMarker) { showModal('Put a dynamic marker first.'); return; }
     const dest = dynamicMarker.getLatLng(), originKey = $("origin").value;
@@ -233,7 +201,6 @@ function initControls() {
       runRoute([locations[originKey]], [dest.lat, dest.lng], originKey);
     } else showModal('Select an origin.');
   };
-
   // Share button
   const shareBtn = document.createElement('button');
   shareBtn.id = 'btnShare';
@@ -243,8 +210,7 @@ function initControls() {
       .then(() => showModal('Link copied to clipboard'));
   };
   $("controls").appendChild(shareBtn);
-
-  // Modales e IndexedDB
+  // Modals and IndexedDB
   $("alert-close").onclick       = () => $("alertModal").classList.remove("active");
   $("btnAddInfo").onclick        = () => { $("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active"); };
   $("btnCancelInfo").onclick     = () => { $("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active"); };
@@ -265,7 +231,6 @@ function initControls() {
       $("infoListPanel").classList.remove("active");
     }
   };
-
   const req = indexedDB.open("CampusAppDB", 1);
   req.onerror = e => console.error("DB error", e);
   req.onsuccess = e => { db = e.target.result; loadAllMarkers(); };
@@ -276,10 +241,7 @@ function initControls() {
 
   window.addEventListener('resize', adjustDirectionsPosition);
 }
-
-
 // fillSelect()
-
 function fillSelect(id) {
   const sel = $(id);
   sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
@@ -302,22 +264,17 @@ function fillSelect(id) {
     sel.appendChild(og);
   }
 }
-
-
 // drawRoute()
-
 function drawRoute() {
   const o = $("origin").value, d = $("destination").value;
   if (!o) return showModal("Select origin");
   if (!d) return showModal("Select destination");
   if (routingControl) map2D.removeControl(routingControl);
-
   const origin = o === "gps"
     ? (userMarker2D ? userMarker2D.getLatLng() : (showModal("Start GPS first"), null))
     : L.latLng(...locations[o]);
   if (!origin) return;
   const dest = L.latLng(...locations[d]);
-
   routingControl = L.Routing.control({
     router: L.Routing.osrmv1({
       serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1", profile: "foot"
@@ -338,10 +295,7 @@ function drawRoute() {
   .on("routingerror", () => showModal("Routing error"))
   .addTo(map2D);
 }
-
-
 // adjustDirectionsPosition()
-
 function adjustDirectionsPosition() {
   const dir = document.querySelector('.leaflet-steps');
   if (!dir) return;
@@ -350,10 +304,7 @@ function adjustDirectionsPosition() {
   dir.style.top = (ctrlRect.bottom - mapRect.top + 10) + 'px';
   dir.style.right = '10px';
 }
-
-
 // GPS Position Handling
-
 function handlePosition(p) {
   const { latitude: lat, longitude: lon, accuracy, altitude: alt, altitudeAccuracy: acc } = p.coords;
   if (accuracy > 100) return;
@@ -366,7 +317,6 @@ function handlePosition(p) {
     smoothLon = smoothLon * (1 - α) + lon * α;
   }
   if (++frameCnt % 3 !== 0) return;
-
   const pos2D = [smoothLat, smoothLon], pos3D = [smoothLon, smoothLat];
   if (getComputedStyle($("map2D")).display !== "none") {
     if (!userMarker2D) userMarker2D = L.marker(pos2D).addTo(map2D);
@@ -379,7 +329,6 @@ function handlePosition(p) {
     else userMarker3D.setLngLat(pos3D);
     if (following) map3D.setCenter(pos3D);
   }
-
   let floor = "Unknown";
   if (baseAlt != null && acc < 5) {
     const d = alt - baseAlt;
@@ -394,7 +343,6 @@ function handlePosition(p) {
       <strong>Floor:</strong> ${floor}
     </p>`;
 }
-
 function startTracking() {
   first = true; frameCnt = 0;
   if (watchId) navigator.geolocation.clearWatch(watchId);
@@ -407,7 +355,6 @@ function startTracking() {
     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
   );
 }
-
 function highlightStep() {
   if (!userMarker2D || !instructions.length) return;
   const pt = turf.point([userMarker2D.getLatLng().lng, userMarker2D.getLatLng().lat]);
@@ -422,10 +369,7 @@ function highlightStep() {
     if (el) el.classList.toggle("current", i === best);
   });
 }
-
-
 // Switch Views
-
 function switchTo2D() {
   $("map3D").style.display = "none";
   $("map2D").style.display = "block";
@@ -436,10 +380,7 @@ function switchTo3D() {
   $("map3D").style.display = "block";
   map3D.resize();
 }
-
-
 // IndexedDB & Info Markers
-
 function loadAllMarkers() {
   const tx = db.transaction("infos", "readonly");
   tx.objectStore("infos").getAll().onsuccess = e => {
@@ -448,7 +389,6 @@ function loadAllMarkers() {
     e.target.result.forEach(addMarkerToMap);
   };
 }
-
 function addMarkerToMap(info) {
   const lng = parseFloat(info.lng), lat = parseFloat(info.lat);
   if (isNaN(lng) || isNaN(lat)) return;
@@ -469,7 +409,6 @@ function addMarkerToMap(info) {
     .addTo(map3D);
   infoMarkers.push(el);
 }
-
 function saveInfo() {
   const title = $("infoTitle").value.trim();
   const description = $("infoDescription").value.trim();
@@ -489,7 +428,6 @@ function saveInfo() {
       loadAllMarkers();
     };
 }
-
 function refreshInfoList() {
   const tx = db.transaction("infos", "readonly");
   tx.objectStore("infos").getAll().onsuccess = e => {
@@ -515,10 +453,7 @@ function refreshInfoList() {
     });
   };
 }
-
-
 // Utilities
-
 function debounce(fn, delay = 100) {
   let t;
   return (...args) => {
@@ -526,15 +461,11 @@ function debounce(fn, delay = 100) {
     t = setTimeout(() => fn(...args), delay);
   };
 }
-
 function showModal(msg) {
   $("alert-message").textContent = msg;
   $("alertModal").classList.add("active");
 }
-
-
 // Dynamic Marker & URL
-
 function placeOrMoveMarker([lat, lon]) {
   if (!dynamicMarker) {
     dynamicMarker = L.marker([lat, lon], {
@@ -554,7 +485,6 @@ function placeOrMoveMarker([lat, lon]) {
     dynamicMarker.setLatLng([lat, lon]);
   }
 }
-
 function updateURL(lat, lon, originKey) {
   const u = new URL(window.location);
   u.searchParams.set('lat', lat.toFixed(6));
@@ -562,7 +492,6 @@ function updateURL(lat, lon, originKey) {
   if (originKey) u.searchParams.set('origin', originKey);
   window.history.replaceState({}, '', u);
 }
-
 function checkURLParams() {
   const p = new URLSearchParams(window.location.search);
   const lat = parseFloat(p.get('lat')), lon = parseFloat(p.get('lon')), ok = p.get('origin');
@@ -579,10 +508,7 @@ function checkURLParams() {
     }
   }
 }
-
-
 // runRoute()
-
 function runRoute(origins, destArr, originKey) {
   if (navControl) map2D.removeControl(navControl);
   navControl = L.Routing.control({
@@ -608,8 +534,5 @@ function runRoute(origins, destArr, originKey) {
 
   updateURL(destArr[0], destArr[1], originKey);
 }
-
-
 // Launch
-
 document.addEventListener("DOMContentLoaded", initApp);

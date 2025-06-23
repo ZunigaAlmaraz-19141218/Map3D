@@ -522,18 +522,26 @@ function refreshInfoList() {
   const tx = db.transaction("infos", "readonly");
   tx.objectStore("infos").getAll().onsuccess = e => {
     const list = $("infoList");
-    list.innerHTML = e.target.result.map(info => `
-      <div class="info-item">
-        <h3>${info.title}</h3>
-        <div class="info-meta">
-          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type}<br>
-          Lat:${info.lat.toFixed(6)}, Lon:${info.lng.toFixed(6)}
+    // Filtrar solo registros con coordenadas válidas
+    const validInfos = e.target.result.filter(info =>
+      !isNaN(parseFloat(info.lat)) && !isNaN(parseFloat(info.lng))
+    );
+    list.innerHTML = validInfos.map(info => {
+      const lat = parseFloat(info.lat);
+      const lng = parseFloat(info.lng);
+      return `
+        <div class="info-item">
+          <h3>${info.title}</h3>
+          <div class="info-meta">
+            ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type}<br>
+            Lat:${lat.toFixed(6)}, Lon:${lng.toFixed(6)}
+          </div>
+          <p>${info.description}</p>
+          ${info.image ? `<img src="${info.image}" class="info-image" alt="${info.title}">` : ''}
+          <button class="btn-delete" data-id="${info.id}">Delete</button>
         </div>
-        <p>${info.description}</p>
-        ${info.image ? `<img src="${info.image}" class="info-image" alt="${info.title}">` : ''}
-        <button class="btn-delete" data-id="${info.id}">Delete</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     list.querySelectorAll(".btn-delete").forEach(btn => {
       btn.onclick = () => {
         const id = Number(btn.dataset.id);
@@ -560,23 +568,15 @@ function showModal(msg) {
 // — Marcador dinámico & URL —
 function placeOrMoveMarker([lat, lon]) {
   if (!dynamicMarker) {
-    // Crear un marker draggable con icono por defecto
-    dynamicMarker = L.marker([lat, lon], {
-      draggable: true
-    }).addTo(map2D)
+    dynamicMarker = L.marker([lat, lon], { draggable: true }).addTo(map2D)
       .bindPopup('Point your destination here. Drag to move.')
       .openPopup();
-
-    // Al moverlo, actualiza URL
     dynamicMarker.on('moveend', e => {
       const p = e.target.getLatLng();
       updateURL(p.lat, p.lng, $("origin").value);
     });
   } else {
-    // Mover el marker existente y reabrir popup
-    dynamicMarker
-      .setLatLng([lat, lon])
-      .openPopup();
+    dynamicMarker.setLatLng([lat, lon]).openPopup();
   }
 }
 

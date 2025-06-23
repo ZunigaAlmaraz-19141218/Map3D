@@ -1,6 +1,7 @@
 // app.js
+'use strict';
 
-// Datos de Campus & POIs
+// — Datos de Campus & POIs —
 const locations = {
   Entrance:      [43.225018, 0.052059],
   Library:       [43.224945, 0.051151],
@@ -36,16 +37,16 @@ const locations = {
   Laboratory_L4: [43.226383, 0.050033]
 };
 
-// Globals
+// — Globals —
 let map2D, map3D, routingControl, navControl, instructions = [];
 let dynamicMarker = null, userMarker2D = null, userMarker3D = null;
-let watchId = null, following = true, smoothLat, smoothLon, first = true, frameCnt = 0, baseAlt = null;
+let watchId = null, following = true, smoothLat, smoothLon, firstGPS = true, frameCnt = 0, baseAlt = null;
 let db, infoMarkers = [];
 
 // Shortcut
 const $ = id => document.getElementById(id);
 
-// Tests
+// — Tests para asegurar elementos DOM —
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function runTests() {
   assert($("origin"), "Missing #origin");
@@ -53,7 +54,7 @@ function runTests() {
   assert($("infoTitle") && $("infoDescription"), "Missing info inputs");
 }
 
-// Custom StepsControl (lista abierta por defecto)
+// — PasosControl personalizado (leaflet-steps) —
 const StepsControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd() {
@@ -67,7 +68,7 @@ const StepsControl = L.Control.extend({
       </ol>`;
     L.DomEvent.disableClickPropagation(div);
     const header = div.querySelector('h3');
-    L.DomEvent.on(header, 'click', () => {
+    header.addEventListener('click', () => {
       const isCollapsed = div.classList.toggle('collapsed');
       header.setAttribute('aria-expanded', (!isCollapsed).toString());
       adjustDirectionsPosition();
@@ -76,17 +77,21 @@ const StepsControl = L.Control.extend({
   }
 });
 
-// Initialize the app
+// — Arranque de la app —
 function initApp() {
   runTests();
   initMaps();
   initControls();
+  setupMobileMenu();
+  syncSelectOptions('origin', 'mobile-origin');
+  syncSelectOptions('destination', 'mobile-destination');
 }
 
-// initMaps()
+// — Crear mapas 2D y 3D —
 function initMaps() {
   const campusBounds = [[43.2235, 0.0459], [43.2280, 0.0536]];
-  // 2D map
+
+  // 2D
   map2D = L.map("map2D", {
     center: [43.22476, 0.05044],
     zoom: 18, minZoom: 17, maxZoom: 19, maxBounds: campusBounds
@@ -106,7 +111,7 @@ function initMaps() {
   }).addTo(map2D);
   map2D.on('dragstart zoomstart', () => following = false);
 
-  // Cluster de POIs
+  // Cluster POIs
   const cluster = L.markerClusterGroup();
   Object.entries(locations).forEach(([key, coords]) => {
     const m = L.marker(coords).bindPopup(key.replace(/_/g, ' '));
@@ -115,7 +120,7 @@ function initMaps() {
   });
   map2D.addLayer(cluster);
 
-  // 3D map
+  // 3D
   map3D = new maplibregl.Map({
     container: "map3D",
     style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
@@ -156,27 +161,28 @@ function initMaps() {
 
   switchTo2D();
 
-  // Place/move dynamic marker
+  // Clic en mapa 2D para marcador dinámico
   map2D.on('click', e => {
     const { lat, lng } = e.latlng;
     placeOrMoveMarker([lat, lng]);
     updateURL(lat, lng, $("origin").value);
   });
 
-  // Read URL params
+  // Leer URL params
   checkURLParams();
 }
 
-// handlePOIClick()
+// — Al hacer click en un POI —
 function handlePOIClick(key) {
   if (!$("origin").value) $("origin").value = key;
   else $("destination").value = key;
 }
 
-// initControls()
+// — Inicializar controles de escritorio —
 function initControls() {
   fillSelect("origin");
   fillSelect("destination");
+
   $("searchBox").addEventListener("input", debounce(() => {
     const txt = $("searchBox").value.toLowerCase();
     ["origin", "destination"].forEach(id => {
@@ -185,6 +191,7 @@ function initControls() {
       });
     });
   }, 100));
+
   $("btnGo").onclick       = drawRoute;
   $("btn2D").onclick       = switchTo2D;
   $("btn3D").onclick       = switchTo3D;
@@ -195,35 +202,35 @@ function initControls() {
     if (userMarker3D) map3D.setCenter(userMarker3D.getLngLat().toArray());
   };
 
-  // Navigate to dynamic marker
   $("btnNavMarker").onclick = () => {
-    if (!dynamicMarker) { showModal('Put a dynamic marker first.'); return; }
+    if (!dynamicMarker) { showModal("Please place a dynamic marker first."); return; }
     const dest = dynamicMarker.getLatLng(), originKey = $("origin").value;
     if (originKey === 'gps') {
-      if (!navigator.geolocation) { showModal('GPS not supported'); return; }
+      if (!navigator.geolocation) { showModal("GPS not supported."); return; }
       navigator.geolocation.getCurrentPosition(
         pos => runRoute([[pos.coords.latitude, pos.coords.longitude]], [dest.lat, dest.lng], 'gps'),
-        err => showModal('Error GPS: ' + err.message)
+        err => showModal("GPS error: " + err.message)
       );
     } else if (locations[originKey]) {
       runRoute([locations[originKey]], [dest.lat, dest.lng], originKey);
-    } else showModal('Select an origin.');
+    } else showModal("Please select an origin.");
   };
 
-  // Share button
-  const shareBtn = document.createElement('button');
-  shareBtn.id = 'btnShare';
-  shareBtn.textContent = 'Share';
-  shareBtn.onclick = () => {
+  $("btnShare").onclick = () => {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => showModal('Link copied to clipboard'));
+      .then(() => showModal("Link copied to clipboard"));
   };
-  $("controls").appendChild(shareBtn);
 
-  // Modals and IndexedDB setup (unchanged)
+  // Modals & IndexedDB
   $("alert-close").onclick       = () => $("alertModal").classList.remove("active");
-  $("btnAddInfo").onclick        = () => { $("infoFormOverlay").classList.add("active"); $("infoForm").classList.add("active"); };
-  $("btnCancelInfo").onclick     = () => { $("infoFormOverlay").classList.remove("active"); $("infoForm").classList.remove("active"); };
+  $("btnAddInfo").onclick        = () => {
+    $("infoFormOverlay").classList.add("active");
+    $("infoForm").classList.add("active");
+  };
+  $("btnCancelInfo").onclick     = () => {
+    $("infoFormOverlay").classList.remove("active");
+    $("infoForm").classList.remove("active");
+  };
   $("hiddenFileInput").onchange  = () => {
     const f = $("hiddenFileInput").files[0];
     if (f) {
@@ -233,17 +240,26 @@ function initControls() {
     }
   };
   $("btnSaveInfo").onclick       = saveInfo;
-  $("btnViewInfos").onclick      = () => { $("infoModalOverlay").classList.add("active"); $("infoListPanel").classList.add("active"); refreshInfoList(); };
-  $("btnCloseInfoPanel").onclick = () => { $("infoModalOverlay").classList.remove("active"); $("infoListPanel").classList.remove("active"); };
+  $("btnViewInfos").onclick      = () => {
+    $("infoModalOverlay").classList.add("active");
+    $("infoListPanel").classList.add("active");
+    refreshInfoList();
+  };
+  $("btnCloseInfoPanel").onclick = () => {
+    $("infoModalOverlay").classList.remove("active");
+    $("infoListPanel").classList.remove("active");
+  };
   $("infoModalOverlay").onclick  = e => {
     if (e.target === $("infoModalOverlay")) {
       $("infoModalOverlay").classList.remove("active");
       $("infoListPanel").classList.remove("active");
     }
   };
+
+  // IndexedDB setup
   const req = indexedDB.open("CampusAppDB", 1);
-  req.onerror = e => console.error("DB error", e);
-  req.onsuccess = e => { db = e.target.result; loadAllMarkers(); };
+  req.onerror    = e => console.error("DB error", e);
+  req.onsuccess  = e => { db = e.target.result; loadAllMarkers(); };
   req.onupgradeneeded = e => {
     const store = e.target.result.createObjectStore("infos", { keyPath: "id", autoIncrement: true });
     store.createIndex("by_date", "timestamp");
@@ -252,10 +268,10 @@ function initControls() {
   window.addEventListener('resize', adjustDirectionsPosition);
 }
 
-// fillSelect()
+// — Rellena <select> de origen/destino —
 function fillSelect(id) {
   const sel = $(id);
-  sel.innerHTML = `<option value="">— select —</option><option value="gps">My Location</option>`;
+  sel.innerHTML = `<option value="">-- select --</option><option value="gps">My Location</option>`;
   const groups = {
     General: ["Entrance", "Library", "Cafeteria", "GYM", "Villa"],
     Buildings: Object.keys(locations).filter(k => /^Building/.test(k) || k === "Observatoire"),
@@ -276,14 +292,14 @@ function fillSelect(id) {
   }
 }
 
-// drawRoute() — reutiliza routingControl en lugar de eliminarlo
+// — Dibujar ruta 2D + 3D —
 function drawRoute() {
   const o = $("origin").value, d = $("destination").value;
-  if (!o) return showModal("Select origin");
-  if (!d) return showModal("Select destination");
+  if (!o) return showModal("Please select an origin.");
+  if (!d) return showModal("Please select a destination.");
 
   const origin = o === "gps"
-    ? (userMarker2D?.getLatLng() || (showModal("Start GPS first"), null))
+    ? (userMarker2D?.getLatLng() || (showModal("Start GPS first."), null))
     : L.latLng(...locations[o]);
   if (!origin) return;
   const dest = L.latLng(...locations[d]);
@@ -303,25 +319,21 @@ function drawRoute() {
       window._stepsCtrl = new StepsControl();
       map2D.addControl(window._stepsCtrl);
       adjustDirectionsPosition();
-
-      // También dibuja en 3D
       draw3DRoute(e.routes[0].coordinates);
     })
-    .on('routingerror', () => showModal("Routing error"))
+    .on('routingerror', () => showModal("Routing error."))
     .addTo(map2D);
   } else {
     routingControl.setWaypoints([origin, dest]);
   }
 }
 
-// draw3DRoute() — nueva función para limpiar y dibujar la ruta en el mapa 3D
+// — Dibuja ruta en 3D —
 function draw3DRoute(routeCoords) {
   if (map3D.getLayer('routeLine')) map3D.removeLayer('routeLine');
   if (map3D.getSource('route')) map3D.removeSource('route');
-
   const coords = routeCoords.map(ll => [ll.lng, ll.lat]);
   const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
-
   map3D.addSource('route', { type: 'geojson', data: geojson });
   map3D.addLayer({
     id: 'routeLine', type: 'line', source: 'route',
@@ -330,53 +342,51 @@ function draw3DRoute(routeCoords) {
   });
 }
 
-// runRoute() — igual que drawRoute() pero para la navegación al marcador dinámico
+// — Navegar al marcador dinámico —
 function runRoute(origins, destArr, originKey) {
+  if (navControl) map2D.removeControl(navControl);
   const wp = [
     L.latLng(origins[0][0], origins[0][1]),
     L.latLng(destArr[0], destArr[1])
   ];
-
-  if (!navControl) {
-    navControl = L.Routing.control({
-      router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
-      waypoints: wp,
-      fitSelectedRoutes: true,
-      show: false,
-      createMarker: () => null,
-      lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
-    })
-    .on('routesfound', e => {
-      instructions = e.routes[0].instructions.slice();
-      if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
-      window._stepsCtrl = new StepsControl();
-      map2D.addControl(window._stepsCtrl);
-      adjustDirectionsPosition();
-      draw3DRoute(e.routes[0].coordinates);
-    })
-    .on('routingerror', () => showModal('Error to calculate route.'))
-    .addTo(map2D);
-  } else {
-    navControl.setWaypoints(wp);
-  }
+  navControl = L.Routing.control({
+    router: L.Routing.osrmv1({ serviceUrl: "https://routing.openstreetmap.de/routed-foot/route/v1" }),
+    waypoints: wp,
+    fitSelectedRoutes: true,
+    show: false,
+    createMarker: () => null,
+    lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
+  })
+  .on('routesfound', e => {
+    instructions = e.routes[0].instructions.slice();
+    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
+    window._stepsCtrl = new StepsControl();
+    map2D.addControl(window._stepsCtrl);
+    adjustDirectionsPosition();
+    draw3DRoute(e.routes[0].coordinates);
+  })
+  .on('routingerror', () => showModal("Error calculating route."))
+  .addTo(map2D);
 
   updateURL(destArr[0], destArr[1], originKey);
 }
-// adjustDirectionsPosition()
+
+// — Ajusta posición panel de pasos —
 function adjustDirectionsPosition() {
   const dir = document.querySelector('.leaflet-steps');
   if (!dir) return;
   const ctrlRect = $("controls").getBoundingClientRect();
-  const mapRect = $("map2D").getBoundingClientRect();
-  dir.style.top = (ctrlRect.bottom - mapRect.top + 10) + 'px';
+  const mapRect  = $("map2D").getBoundingClientRect();
+  dir.style.top   = (ctrlRect.bottom - mapRect.top + 10) + 'px';
   dir.style.right = '10px';
 }
-// GPS Position Handling
+
+// — Manejo de GPS —
 function handlePosition(p) {
   const { latitude: lat, longitude: lon, accuracy, altitude: alt, altitudeAccuracy: acc } = p.coords;
   if (accuracy > 100) return;
-  if (first) {
-    smoothLat = lat; smoothLon = lon; first = false;
+  if (firstGPS) {
+    smoothLat = lat; smoothLon = lon; firstGPS = false;
     if (acc < 5) baseAlt = alt;
   } else {
     const α = 0.4;
@@ -385,6 +395,7 @@ function handlePosition(p) {
   }
   if (++frameCnt % 3 !== 0) return;
   const pos2D = [smoothLat, smoothLon], pos3D = [smoothLon, smoothLat];
+
   if (getComputedStyle($("map2D")).display !== "none") {
     if (!userMarker2D) userMarker2D = L.marker(pos2D).addTo(map2D);
     else userMarker2D.setLatLng(pos2D);
@@ -396,6 +407,7 @@ function handlePosition(p) {
     else userMarker3D.setLngLat(pos3D);
     if (following) map3D.setCenter(pos3D);
   }
+
   let floor = "Unknown";
   if (baseAlt != null && acc < 5) {
     const d = alt - baseAlt;
@@ -410,8 +422,9 @@ function handlePosition(p) {
       <strong>Floor:</strong> ${floor}
     </p>`;
 }
+
 function startTracking() {
-  first = true; frameCnt = 0;
+  firstGPS = true; frameCnt = 0;
   if (watchId) navigator.geolocation.clearWatch(watchId);
   navigator.geolocation.getCurrentPosition(handlePosition, () => {}, {
     enableHighAccuracy: true, timeout: 5000, maximumAge: 0
@@ -422,6 +435,8 @@ function startTracking() {
     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
   );
 }
+
+// — Resaltar paso actual —
 function highlightStep() {
   if (!userMarker2D || !instructions.length) return;
   const pt = turf.point([userMarker2D.getLatLng().lng, userMarker2D.getLatLng().lat]);
@@ -436,7 +451,8 @@ function highlightStep() {
     if (el) el.classList.toggle("current", i === best);
   });
 }
-// Switch Views
+
+// — Toggle 2D/3D —
 function switchTo2D() {
   $("map3D").style.display = "none";
   $("map2D").style.display = "block";
@@ -447,7 +463,8 @@ function switchTo3D() {
   $("map3D").style.display = "block";
   map3D.resize();
 }
-// IndexedDB & Info Markers
+
+// — IndexedDB: cargar marcadores de info —
 function loadAllMarkers() {
   const tx = db.transaction("infos", "readonly");
   tx.objectStore("infos").getAll().onsuccess = e => {
@@ -467,7 +484,7 @@ function addMarkerToMap(info) {
       .setHTML(`
         <h3>${info.title}</h3>
         <div class="info-meta">
-          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type} ·
+          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type}<br>
           Lat:${lat.toFixed(6)}, Lon:${lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
@@ -476,11 +493,15 @@ function addMarkerToMap(info) {
     .addTo(map3D);
   infoMarkers.push(el);
 }
+
+// — Guardar info en IndexedDB —
 function saveInfo() {
   const title = $("infoTitle").value.trim();
   const description = $("infoDescription").value.trim();
+  if (!title || !description) {
+    return showModal("Please enter both title and description.");
+  }
   const type = $("infoMarkerType").value;
-  if (!title || !description) { showModal("Write title and description."); return; }
   const image = $("preview").src || null;
   const center = map3D.getCenter();
   const lng = center.lng, lat = center.lat, timestamp = Date.now();
@@ -495,6 +516,8 @@ function saveInfo() {
       loadAllMarkers();
     };
 }
+
+// — Refrescar lista de info en panel —
 function refreshInfoList() {
   const tx = db.transaction("infos", "readonly");
   tx.objectStore("infos").getAll().onsuccess = e => {
@@ -503,7 +526,7 @@ function refreshInfoList() {
       <div class="info-item">
         <h3>${info.title}</h3>
         <div class="info-meta">
-          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type} ·
+          ${new Date(info.timestamp).toLocaleString()} · Type: ${info.type}<br>
           Lat:${info.lat.toFixed(6)}, Lon:${info.lng.toFixed(6)}
         </div>
         <p>${info.description}</p>
@@ -520,7 +543,8 @@ function refreshInfoList() {
     });
   };
 }
-// Utilities
+
+// — Utilidades —
 function debounce(fn, delay = 100) {
   let t;
   return (...args) => {
@@ -532,26 +556,30 @@ function showModal(msg) {
   $("alert-message").textContent = msg;
   $("alertModal").classList.add("active");
 }
-// Dynamic Marker & URL
+
+// — Marcador dinámico & URL —
 function placeOrMoveMarker([lat, lon]) {
   if (!dynamicMarker) {
+    // Crear un marker draggable con icono por defecto
     dynamicMarker = L.marker([lat, lon], {
-      draggable: true,
-      icon: L.divIcon({
-        className: 'custom-dynamic-marker',
-        html: '<div class="custom-icon"></div>',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      })
-    }).addTo(map2D);
+      draggable: true
+    }).addTo(map2D)
+      .bindPopup('Point your destination here. Drag to move.')
+      .openPopup();
+
+    // Al moverlo, actualiza URL
     dynamicMarker.on('moveend', e => {
       const p = e.target.getLatLng();
       updateURL(p.lat, p.lng, $("origin").value);
     });
   } else {
-    dynamicMarker.setLatLng([lat, lon]);
+    // Mover el marker existente y reabrir popup
+    dynamicMarker
+      .setLatLng([lat, lon])
+      .openPopup();
   }
 }
+
 function updateURL(lat, lon, originKey) {
   const u = new URL(window.location);
   u.searchParams.set('lat', lat.toFixed(6));
@@ -575,31 +603,71 @@ function checkURLParams() {
     }
   }
 }
-// runRoute()
-function runRoute(origins, destArr, originKey) {
-  if (navControl) map2D.removeControl(navControl);
-  navControl = L.Routing.control({
-    router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
-    waypoints: [
-      L.latLng(origins[0][0], origins[0][1]),
-      L.latLng(destArr[0], destArr[1])
-    ],
-    fitSelectedRoutes: true,
-    show: false,
-    createMarker: () => null,
-    lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
-  })
-  .on('routesfound', e => {
-    instructions = e.routes[0].instructions;
-    if (window._stepsCtrl) map2D.removeControl(window._stepsCtrl);
-    window._stepsCtrl = new StepsControl();
-    map2D.addControl(window._stepsCtrl);
-    adjustDirectionsPosition();
-  })
-  .on('routingerror', () => showModal('Error to calculate route.'))
-  .addTo(map2D);
 
-  updateURL(destArr[0], destArr[1], originKey);
+// — Menú móvil —
+function setupMobileMenu() {
+  const toggle   = document.querySelector('.menu-toggle');
+  const menu     = document.querySelector('.menu-list');
+  const overlay  = document.querySelector('.menu-overlay');
+  const closeBtn = document.querySelector('.menu-close');
+
+  if (toggle && menu && overlay && closeBtn) {
+    toggle.addEventListener('click', () => {
+      menu.classList.add('active');
+      overlay.classList.add('active');
+      menu.focus();
+    });
+    closeBtn.addEventListener('click', () => {
+      menu.classList.remove('active');
+      overlay.classList.remove('active');
+      toggle.focus();
+    });
+    overlay.addEventListener('click', () => {
+      menu.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+    menu.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        toggle.focus();
+      }
+    });
+  }
+
+  const mapping = {
+    'btn2D-mobile':       'btn2D',
+    'btn3D-mobile':       'btn3D',
+    'btnStartGPS-mobile': 'btnStartGPS',
+    'btnFollow-mobile':   'btnFollow',
+    'btnGo-mobile':       'btnGo',
+    'btnNavMarker-mobile':'btnNavMarker',
+    'btnAddInfo-mobile':  'btnAddInfo',
+    'btnViewInfos-mobile':'btnViewInfos',
+    'btnShare-mobile':    'btnShare'
+  };
+  Object.entries(mapping).forEach(([mid, did]) => {
+    const mob = document.getElementById(mid);
+    const desk = document.getElementById(did);
+    if (mob && desk) mob.onclick = () => desk.click();
+  });
 }
-// Launch
+
+// — Sincronizar selects mobile/desktop —
+function syncSelectOptions(srcId, destId) {
+  const src  = document.getElementById(srcId);
+  const dest = document.getElementById(destId);
+  if (!src || !dest) return;
+  dest.innerHTML     = src.innerHTML;
+  dest.selectedIndex = src.selectedIndex;
+  dest.onchange = () => {
+    src.selectedIndex = dest.selectedIndex;
+    src.dispatchEvent(new Event('change'));
+  };
+  src.onchange = () => {
+    dest.selectedIndex = src.selectedIndex;
+  };
+}
+
+// — Iniciar cuando el DOM esté listo —
 document.addEventListener("DOMContentLoaded", initApp);

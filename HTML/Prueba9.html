@@ -1,56 +1,106 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ENIT Campus Navigation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:," />
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Routing Machine CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-  <!-- MapLibre CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" />
-  <!-- Plugins CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+  <link rel="icon" href="data:,">
 
-  <!--CSS -->
-  <link rel="stylesheet" href="../CSS/styles.css" />
+  <!-- Leaflet + Plugins CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"
+  />
+
+  <!-- Your custom CSS -->
+  <link rel="stylesheet" href="../CSS/styles.css">
 </head>
 <body>
+  <!-- Mobile Menu -->
+  <nav class="mobile-menu" aria-label="Main menu">
+    <button class="menu-toggle" aria-label="Open menu" title="Open menu">☰</button>
+    <div class="menu-overlay"></div>
+    <ul class="menu-list" tabindex="-1">
+      <button class="menu-close" aria-label="Close menu" title="Close menu">×</button>
+      <div class="menu-label">Navigation</div>
+      <li><button id="btn2D-mobile" class="menu-btn"><span class="icon-btn icon-2d"></span>2D View</button></li>
+      <li><button id="btn3D-mobile" class="menu-btn"><span class="icon-btn icon-3d"></span>3D View</button></li>
+      <li><button id="btnStartGPS-mobile" class="menu-btn"><span class="icon-btn icon-gps"></span>Start GPS</button></li>
+      <li><button id="btnFollow-mobile" class="menu-btn"><span class="icon-btn icon-center"></span>Center</button></li>
 
-  <!--Control -->
+      <div class="menu-label">Route</div>
+      <li><select id="mobile-origin"></select></li>
+      <li><select id="mobile-destination"></select></li>
+      <li><button id="btnGo-mobile" class="menu-btn"><span class="icon-btn icon-go"></span>Go</button></li>
+
+      <div class="menu-label">Actions</div>
+      <li><button id="btnNavMarker-mobile" class="menu-btn"><span class="icon-btn icon-nav"></span>Navigate to Marker</button></li>
+      <li><button id="btnAddInfo-mobile" class="menu-btn"><span class="icon-btn icon-add"></span>Add Information</button></li>
+      <li><button id="btnViewInfos-mobile" class="menu-btn"><span class="icon-btn icon-view"></span>View Information</button></li>
+      <li><button id="btnShare-mobile" class="menu-btn"><span class="icon-btn icon-share"></span>Share</button></li>
+    </ul>
+  </nav>
+
+  <!-- Desktop Controls -->
   <div id="controls" role="region" aria-label="Map controls">
-    <button id="btn2D">2D View</button>
-    <button id="btn3D">3D View</button>
-    <button id="btnStartGPS">Start GPS</button>
-    <button id="btnFollow">Center</button>
+    <button id="btn2D" class="control-btn" title="2D View"><span class="icon-btn icon-2d"></span></button>
+    <button id="btn3D" class="control-btn" title="3D View"><span class="icon-btn icon-3d"></span></button>
+    <button id="btnStartGPS" class="control-btn" title="Start GPS"><span class="icon-btn icon-gps"></span></button>
+    <button id="btnFollow" class="control-btn" title="Center"><span class="icon-btn icon-center"></span></button>
 
-    <label for="searchBox">Filter:</label>
-    <input id="searchBox" placeholder="Type to filter…" aria-label="Filter locations" />
+    <input
+      id="searchBox"
+      type="text"
+      placeholder="Filter places…"
+      aria-label="Filter places"
+    />
 
-    <label for="origin">Start From:</label>
-    <select id="origin" aria-label="Select origin"></select>
+    <select id="origin" aria-label="Select origin">
+      <option value="">-- select --</option>
+    </select>
+    <select id="destination" aria-label="Select destination">
+      <option value="">-- select --</option>
+    </select>
 
-    <label for="destination">Go To:</label>
-    <select id="destination" aria-label="Select destination"></select>
-
-    <button id="btnGo">Go</button>
-    <!-- New button for navigating to dynamic marker -->
-    <button id="btnNavMarker">Navigate to Marker</button>
-
-    <button id="btnAddInfo">Add Information</button>
-    <button id="btnViewInfos">View Information</button>
+    <button id="btnGo" class="control-btn" title="Go"><span class="icon-btn icon-go"></span></button>
+    <button id="btnNavMarker" class="control-btn" title="Navigate to Marker"><span class="icon-btn icon-nav"></span></button>
+    <button id="btnAddInfo" class="control-btn" title="Add Information"><span class="icon-btn icon-add"></span></button>
+    <button id="btnViewInfos" class="control-btn" title="View Information"><span class="icon-btn icon-view"></span></button>
+    <button id="btnShare" class="control-btn" title="Share"><span class="icon-btn icon-share"></span></button>
   </div>
 
   <!-- Alert Modal -->
   <div id="alertModal" class="modal-overlay">
     <div class="modal-content">
-      <button id="alert-close" class="modal-close" aria-label="Cerrar">&times;</button>
+      <button id="alert-close" class="modal-close" aria-label="Close alert">×</button>
       <p id="alert-message"></p>
     </div>
   </div>
@@ -58,47 +108,36 @@
   <!-- Add Information Modal -->
   <div id="infoFormOverlay" class="modal-overlay"></div>
   <div id="infoForm" class="modal-content info-modal">
-    <div class="modal-header">
-      <h2>Add Information</h2>
-      <button id="btnCancelInfo" class="modal-close" aria-label="Cerrar">&times;</button>
-    </div>
-    <div class="modal-body">
-      <label for="infoTitle">Title:</label>
-      <input type="text" id="infoTitle" placeholder="Title…" />
-
-      <label for="infoDescription">Description:</label>
-      <textarea id="infoDescription" placeholder="Describe the issue…"></textarea>
-
-      <label for="infoMarkerType">Marker Type:</label>
-      <select id="infoMarkerType">
-        <option value="tree">Tree</option>
-        <option value="cross">Cross</option>
-      </select>
-
-      <label for="hiddenFileInput">Optional Picture:</label>
-      <input type="file" id="hiddenFileInput" accept="image/*" capture="environment" />
-      <img id="preview" class="info-image" alt="Preview here" />
-    </div>
-    <div class="modal-footer">
-      <button id="btnSaveInfo">Save Information</button>
-    </div>
+    <h2>Add Information</h2>
+    <button id="btnCancelInfo" class="modal-close" aria-label="Cancel">×</button>
+    <label for="infoTitle">Title:</label>
+    <input type="text" id="infoTitle" placeholder="Title…" />
+    <label for="infoDescription">Description:</label>
+    <textarea id="infoDescription" placeholder="Description…"></textarea>
+    <label for="infoMarkerType">Marker Type:</label>
+    <select id="infoMarkerType">
+      <option value="tree">Tree</option>
+      <option value="cross">Cross</option>
+    </select>
+    <label for="hiddenFileInput">Optional Photo:</label>
+    <input type="file" id="hiddenFileInput" accept="image/*" capture="environment" />
+    <img id="preview" class="info-image" alt="Preview" />
+    <button id="btnSaveInfo" class="modal-save">Save</button>
   </div>
 
   <!-- View Information Modal -->
   <div id="infoModalOverlay" class="modal-overlay"></div>
   <div id="infoListPanel" class="modal-content info-modal">
-    <div class="modal-header">
-      <h2>Saved Information</h2>
-      <button id="btnCloseInfoPanel" class="modal-close" aria-label="Close">&times;</button>
-    </div>
+    <h2>Saved Information</h2>
+    <button id="btnCloseInfoPanel" class="modal-close" aria-label="Close">×</button>
     <div id="infoList" class="info-list"></div>
   </div>
 
-  <!-- Maps -->
-  <div id="map2D" role="region" aria-label="Campus Map"></div>
-  <div id="map3D" role="region" aria-label="Campus 3D Map"></div>
+  <!-- 2D & 3D Maps -->
+  <div id="map2D" role="region" aria-label="2D map"></div>
+  <div id="map3D" role="region" aria-label="3D map"></div>
 
-  <!-- GPS Info Panel -->
+  <!-- GPS Status Panel -->
   <div id="info" role="status"></div>
 
   <!-- External Scripts -->
@@ -111,8 +150,7 @@
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
 
-  <!-- Our JS -->
+  <!-- Your App -->
   <script src="../JS/app.js"></script>
-  <script>document.addEventListener("DOMContentLoaded", initApp);</script>
 </body>
 </html>

@@ -8,7 +8,6 @@ const locations = {
   Cafeteria:     [43.227491, 0.050948],
   GYM:           [43.225022, 0.050141],
   Building_A:    [43.225121, 0.051905],
-  Building_B:    [43.225188, 0.051330],
   Building_C:    [43.224918, 0.050762],
   Building_D:    [43.224511, 0.051267],
   Building_E:    [43.224897, 0.051205],
@@ -85,6 +84,20 @@ function initApp() {
   setupMobileMenu();
   syncSelectOptions('origin', 'mobile-origin');
   syncSelectOptions('destination', 'mobile-destination');
+  
+  // Initialize authentication system
+  if (typeof UserAuthSystem !== 'undefined') {
+    window.userAuth = new UserAuthSystem();
+    console.log('Authentication system initialized');
+  }
+  
+  // Initialize room management after maps are fully loaded
+  setTimeout(() => {
+    if (typeof roomManager !== 'undefined' && roomManager) {
+      roomManager.initializeRooms2D(map2D);
+      roomManager.initializeRooms3D(map3D);
+    }
+  }, 1500); // Increased delay to ensure 3D map style is loaded
 }
 
 // — Crear mapas 2D y 3D —
@@ -123,8 +136,17 @@ function initMaps() {
   // 3D
   map3D = new maplibregl.Map({
     container: "map3D",
-    style: "https://api.maptiler.com/maps/streets-v2/style.json?key=OskyrOiFGGaB6NMWJlcC",
-    center: [0.05044, 43.22476], zoom: 17, pitch: 60, bearing: -20, antialias: true
+    style: "https://api.maptiler.com/maps/019765b8-8c53-7639-b2c5-276d45b87166/style.json?key=tm1a9kC8ndRlVP5BX69h",
+    center: [0.05044, 43.22476],
+    zoom: 18,
+    pitch: 45,
+    bearing: 0,
+    maxBounds: [[0.0459, 43.2235], [0.0536, 43.2280]]
+  });
+
+  // Wait for 3D map style to load before initializing routing
+  map3D.on('styledata', () => {
+    console.log('3D map style loaded');
   });
   map3D.addControl(new maplibregl.NavigationControl());
   map3D.on('dragstart zoomstart', () => following = false);
@@ -220,6 +242,65 @@ function initControls() {
     navigator.clipboard.writeText(window.location.href)
       .then(() => showModal("Link copied to clipboard"));
   };
+
+  // Room Management Controls
+  $("btnRoomView").onclick = () => {
+    if (typeof roomManager !== 'undefined' && roomManager) {
+      // Toggle room layer visibility or show room selection modal
+      const firstRoom = Object.keys(campusRooms)[0];
+      if (firstRoom) {
+        roomManager.showRoomModal(firstRoom);
+      }
+    } else {
+      showModal("Room management system is loading...");
+    }
+  };
+
+  $("btnReportIssue").onclick = () => {
+    if (typeof roomManager !== 'undefined' && roomManager) {
+      roomManager.showReportModal(Object.keys(campusRooms)[0]);
+    } else {
+      showModal("Room management system is loading...");
+    }
+  };
+
+  const adminPanelBtn = $("btnAdminPanel");
+  if (adminPanelBtn) {
+    adminPanelBtn.onclick = () => {
+      console.log('Admin panel button clicked');
+      console.log('adminPanel exists:', typeof adminPanel !== 'undefined' && adminPanel);
+      
+      if (typeof adminPanel !== 'undefined' && adminPanel) {
+        const panel = document.getElementById('adminPanel');
+        console.log('Admin panel element found:', !!panel);
+        
+        if (panel) {
+          const isHidden = panel.style.display === 'none' || !panel.style.display;
+          panel.style.display = isHidden ? 'block' : 'none';
+          console.log('Panel visibility toggled to:', panel.style.display);
+        
+        // Always ensure admin mode indicator is shown when panel is visible
+        if (panel.style.display !== 'none') {
+          adminPanel.showAdminModeIndicator();
+        }
+      } else {
+        console.log('Creating admin panel...');
+        adminPanel.init();
+      }
+    } else {
+      console.log('Admin panel not ready, attempting to initialize...');
+      
+      // Try to initialize manually
+      if (typeof AdminPanel !== 'undefined' && window.roomManager) {
+        window.adminPanel = new AdminPanel(roomManager);
+        adminPanel.init();
+        showModal("Admin panel initialized!");
+      } else {
+        showModal("Admin panel is loading... Please wait a moment and try again.");
+      }
+    }
+    };
+  }
 
   // Modals & IndexedDB
   $("alert-close").onclick       = () => $("alertModal").classList.remove("active");
@@ -644,7 +725,10 @@ function setupMobileMenu() {
     'btnNavMarker-mobile':'btnNavMarker',
     'btnAddInfo-mobile':  'btnAddInfo',
     'btnViewInfos-mobile':'btnViewInfos',
-    'btnShare-mobile':    'btnShare'
+    'btnShare-mobile':    'btnShare',
+    'btnRoomView-mobile': 'btnRoomView',
+    'btnReportIssue-mobile': 'btnReportIssue',
+    'btnAdminPanel-mobile': 'btnAdminPanel'
   };
   Object.entries(mapping).forEach(([mid, did]) => {
     const mob = document.getElementById(mid);
@@ -667,6 +751,31 @@ function syncSelectOptions(srcId, destId) {
   src.onchange = () => {
     dest.selectedIndex = src.selectedIndex;
   };
+}
+
+// Authentication handlers
+function handleGuestLogin() {
+  console.log('Guest login clicked');
+  alert('Guest login functionality - logging in as guest user');
+  if (window.userAuth) {
+    userAuth.loginAsGuest();
+  }
+}
+
+function handleLogin() {
+  console.log('Login button clicked');
+  alert('Login functionality - opening login modal');
+  if (window.userAuth) {
+    userAuth.showLoginModal();
+  }
+}
+
+function handleLogout() {
+  console.log('Logout button clicked');
+  alert('Logout functionality - logging out user');
+  if (window.userAuth) {
+    userAuth.logout();
+  }
 }
 
 // — Iniciar cuando el DOM esté listo —

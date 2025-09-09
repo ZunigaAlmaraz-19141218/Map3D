@@ -127,14 +127,85 @@ body {
   margin: 12px 0 4px;
 }
 
+/* Top Header Bar */
+.top-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1100;
+}
+
+.header-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Auth buttons in header */
+.auth-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all var(--transition-speed);
+  backdrop-filter: blur(10px);
+}
+
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.auth-btn.primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  border-color: var(--color-accent);
+}
+
+.auth-btn.primary:hover {
+  background: #ffed4a;
+  transform: translateY(-1px);
+}
+
+/* User info display */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.user-role {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
 /* Controles escritorio */
 #controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   background: #fff;
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: 1px solid #ddd;
   padding: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 #controls input,
 #controls select {
@@ -365,4 +436,722 @@ h1, h2, h3, h4, h5, h6, p {
 /* Estilo en lista de información */
 .info-list .info-item {
   border-color: var(--accent-5) !important;
+}
+
+/* ===== RESPONSIVE ROLE-BASED PANELS ===== */
+/* Main content container */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Map container with proper spacing */
+.map-container {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+}
+
+/* Role-based panels container - positioned as sidebar on desktop, bottom on mobile */
+.role-panels-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 2px solid var(--color-primary);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 500;
+  max-height: 40vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.role-panels-container:not(.hidden) {
+  transform: translateY(0);
+}
+
+/* Desktop layout - sidebar */
+@media (min-width: 1024px) {
+  .role-panels-container {
+    position: fixed;
+    top: 120px; /* Below controls */
+    bottom: auto;
+    left: auto;
+    right: 20px;
+    width: 350px;
+    max-height: calc(100vh - 140px);
+    border-radius: 8px;
+    border: 2px solid var(--color-primary);
+    transform: translateX(100%);
+  }
+  
+  .role-panels-container:not(.hidden) {
+    transform: translateX(0);
+  }
+  
+  /* Adjust map container to make room for sidebar */
+  .map-container {
+    margin-right: 370px;
+  }
+}
+
+/* Panel tabs navigation */
+.panel-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(0, 80, 120, 0.05);
+  border-radius: 6px;
+}
+
+.panel-tab {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.panel-tab:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.panel-tab.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 4px rgba(0, 80, 120, 0.3);
+}
+
+.panel-icon {
+  font-size: 1rem;
+}
+
+.panel-title {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Panel content areas */
+.panel-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 200px;
+  max-height: calc(40vh - 80px);
+  overflow-y: auto;
+}
+
+/* Desktop panel content */
+@media (min-width: 1024px) {
+  .panel-content {
+    padding: 16px;
+    min-height: 300px;
+    max-height: calc(100vh - 220px);
+  }
+  
+  .panel-tabs {
+    padding: 12px;
+  }
+  
+  .panel-tab {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+  
+  .panel-title {
+    font-size: 0.9rem;
+  }
+}
+
+.panel-pane {
+  display: none;
+}
+
+.panel-pane.active {
+  display: block;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Events panel for General Public */
+.events-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.event-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-speed);
+  cursor: pointer;
+}
+
+.event-card:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Desktop events layout */
+@media (min-width: 1024px) {
+  .events-panel {
+    gap: 16px;
+  }
+  
+  .event-card {
+    padding: 16px;
+  }
+}
+
+.event-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.event-date {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.event-location {
+  font-size: 0.9rem;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+/* Reports panel for Students/Professors */
+.reports-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.reports-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-primary);
+}
+
+.reports-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-group label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.filter-group select {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.85rem;
+  min-width: 100px;
+}
+
+/* Reports table container */
+.reports-table-container {
+  flex: 1;
+  overflow: auto;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+/* Reports table */
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.85rem;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.reports-table th {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.reports-table tr:hover {
+  background: #f8f9fa;
+}
+
+.reports-table tbody tr {
+  cursor: pointer;
+}
+
+/* Desktop reports adjustments */
+@media (min-width: 1024px) {
+  .reports-panel {
+    gap: 16px;
+  }
+  
+  .reports-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .reports-filters {
+    gap: 12px;
+  }
+  
+  .filter-group label {
+    font-size: 0.9rem;
+  }
+  
+  .filter-group select {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+  
+  .reports-table {
+    font-size: 0.9rem;
+  }
+  
+  .reports-table th,
+  .reports-table td {
+    padding: 10px;
+  }
+  
+  .reports-table th {
+    font-size: 0.85rem;
+  }
+}
+
+/* Admin panel specific styles */
+.admin-panel {
+  position: fixed;
+  top: 120px;
+  right: -420px;
+  width: 400px;
+  max-height: calc(100vh - 140px);
+  background: white;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+  border: 2px solid var(--color-primary);
+  border-right: none;
+}
+
+.admin-panel.visible {
+  right: 0;
+}
+
+.admin-panel-header {
+  background: var(--color-primary);
+  color: white;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-panel-content {
+  padding: 20px;
+}
+
+/* Admin mode indicator */
+.admin-mode-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--color-accent);
+  color: var(--color-primary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1600;
+  display: none;
+}
+
+.admin-mode-indicator.active {
+  display: block;
+}
+
+/* Role-specific visibility */
+.role-general-public .reports-panel,
+.role-general-public .admin-panel {
+  display: none !important;
+}
+
+.role-student .admin-panel {
+  display: none !important;
+}
+
+.role-professor .admin-panel {
+  display: none !important;
+}
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+  .role-panels-container {
+    padding: 8px;
+    max-height: 50vh;
+  }
+  
+  .panel-tabs {
+    gap: 2px;
+    padding: 6px;
+  }
+  
+  .panel-tab {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    min-width: 60px;
+  }
+  
+  .panel-title {
+    display: none; /* Show only icons on mobile */
+  }
+  
+  .panel-content {
+    padding: 8px;
+    max-height: calc(50vh - 60px);
+  }
+  
+  .reports-filters {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .filter-group select {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .reports-table {
+    font-size: 0.75rem;
+  }
+  
+  .reports-table th,
+  .reports-table td {
+    padding: 6px 4px;
+  }
+  
+  .admin-panel {
+    width: 95vw;
+    max-width: 400px;
+    right: -100%;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+  }
+  
+  .admin-mode-indicator {
+    top: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  
+  .event-card {
+    padding: 8px;
+  }
+  
+  .event-title {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-panels-container {
+    padding: 8px;
+    margin-top: 8px;
+  }
+  
+  .panel-content {
+    padding: 12px;
+  }
+  
+  .event-card {
+    padding: 12px;
+  }
+  
+  .reports-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .reports-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Ensure panels don't overlap with controls */
+@media (min-width: 769px) {
+  .role-panels-container {
+    margin-top: 40px;
+  }
+}
+
+/* Panel toggle button - Dashboard circle button */
+.panel-toggle-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all var(--transition-speed);
+}
+
+.panel-toggle-btn:hover {
+  background: var(--color-primary-dark);
+  transform: scale(1.1);
+}
+
+.panel-toggle-btn.active {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+/* Desktop toggle button positioning with extra top margin */
+@media (min-width: 1024px) {
+  .panel-toggle-btn {
+    top: 160px; /* Increased from 140px for extra top margin */
+    bottom: auto;
+    right: 20px;
+  }
+}
+
+/* Hide panels by default until role is determined */
+.role-panels-container.hidden {
+  transform: translateY(100%);
+}
+
+@media (min-width: 1024px) {
+  .role-panels-container.hidden {
+    transform: translateX(100%);
+  }
+}
+
+/* Smooth transitions for panel visibility */
+.role-panels-container {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Action Bar below map */
+.action-bar {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.action-bar.hidden {
+  display: none;
+}
+
+/* Dashboard button */
+.dashboard-btn {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-speed);
+  box-shadow: 0 2px 4px rgba(0, 85, 164, 0.2);
+}
+
+.dashboard-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
+}
+
+.dashboard-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive action bar */
+@media (max-width: 768px) {
+  .action-bar {
+    padding: 10px 12px;
+    margin: 12px 0;
+  }
+  
+  .dashboard-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Auth Modal Styles */
+.auth-modal {
+  max-width: 400px;
+  width: 90%;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.1);
+}
+
+.demo-accounts {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.demo-accounts h4 {
+  margin-bottom: 8px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.demo-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.demo-btn {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all var(--transition-speed);
+}
+
+.demo-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .top-header {
+    padding: 6px 12px;
+  }
+  
+  .header-title {
+    font-size: 1rem;
+  }
+  
+  .auth-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+  
+  .user-role {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+  }
+}
+
+/* Adjust map container when panels are visible on desktop */
+@media (min-width: 1024px) {
+  .map-container.panels-visible {
+    margin-right: 370px;
+    transition: margin-right 0.3s ease-in-out;
+  }
 }

@@ -40,8 +40,10 @@
     href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"
   />
 
-  <!-- Your custom CSS -->
+  <!-- Local CSS -->
   <link rel="stylesheet" href="../CSS/styles.css">
+  <link rel="stylesheet" href="../CSS/roomStyles.css">
+  <link rel="stylesheet" href="../CSS/authStyles.css">
 </head>
 <body>
   <!-- Mobile Menu -->
@@ -66,8 +68,41 @@
       <li><button id="btnAddInfo-mobile" class="menu-btn"><span class="icon-btn icon-add"></span>Add Information</button></li>
       <li><button id="btnViewInfos-mobile" class="menu-btn"><span class="icon-btn icon-view"></span>View Information</button></li>
       <li><button id="btnShare-mobile" class="menu-btn"><span class="icon-btn icon-share"></span>Share</button></li>
+      
+      <div class="menu-label">Room Management</div>
+      <li><button id="btnRoomView-mobile" class="menu-btn">🏢 Room View</button></li>
+      <li><button id="btnReportIssue-mobile" class="menu-btn">📝 Report Issue</button></li>
+      <li><button id="btnAdminPanel-mobile" class="menu-btn">⚙️ Admin Panel</button></li>
     </ul>
   </nav>
+
+  <!-- Top Header -->
+  <header class="top-header">
+    <h1 class="header-title">🏫 Campus Digital Twin</h1>
+    <div class="header-auth">
+      <!-- Authentication section -->
+      <div id="authSection">
+        <!-- Guest/Login buttons (shown when not logged in) -->
+        <div id="loginButtons" class="auth-buttons">
+          <button id="guestBtn" class="auth-btn" onclick="handleGuestLogin()">
+            👤 Guest User
+          </button>
+          <button id="loginBtn" class="auth-btn primary" onclick="handleLogin()">
+            🔑 Login
+          </button>
+        </div>
+        
+        <!-- User info (shown when logged in) -->
+        <div id="userInfo" class="user-info hidden">
+          <span id="userWelcome">Welcome, <span id="userName"></span></span>
+          <span id="userRoleDisplay" class="user-role"></span>
+          <button id="logoutBtn" class="auth-btn" onclick="handleLogout()">
+            🚪 Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
   <!-- Desktop Controls -->
   <div id="controls" role="region" aria-label="Map controls">
@@ -95,6 +130,10 @@
     <button id="btnAddInfo" class="control-btn" title="Add Information"><span class="icon-btn icon-add"></span></button>
     <button id="btnViewInfos" class="control-btn" title="View Information"><span class="icon-btn icon-view"></span></button>
     <button id="btnShare" class="control-btn" title="Share"><span class="icon-btn icon-share"></span></button>
+    
+    <!-- Room Management Controls -->
+    <button id="btnRoomView" class="control-btn" title="Toggle Room View">🏢</button>
+    <button id="btnReportIssue" class="control-btn" title="Report Issue">📝</button>
   </div>
 
   <!-- Alert Modal -->
@@ -134,11 +173,128 @@
   </div>
 
   <!-- 2D & 3D Maps -->
-  <div id="map2D" role="region" aria-label="2D map"></div>
-  <div id="map3D" role="region" aria-label="3D map"></div>
+  <div class="map-container">
+    <div id="map2D" role="region" aria-label="2D map"></div>
+    <div id="map3D" role="region" aria-label="3D map"></div>
+  </div>
+
+  <!-- Action Bar removed - using only circle toggle button -->
 
   <!-- GPS Status Panel -->
   <div id="info" role="status"></div>
+
+  <!-- Panel Toggle Button -->
+  <button id="panelToggleBtn" class="panel-toggle-btn hidden" onclick="layoutManager.togglePanels()" title="Toggle Panels">
+    📊
+  </button>
+
+  <!-- Role-Based Panels Container -->
+  <div id="rolePanelsContainer" class="role-panels-container hidden">
+    <div class="panel-tabs" id="panelTabs">
+      <!-- Tabs will be dynamically generated based on user role -->
+    </div>
+    
+    <div class="panel-content">
+      <!-- Events Panel (General Public) -->
+      <div id="eventsPanel" class="panel-pane">
+        <div class="events-panel">
+          <div class="event-card">
+            <div class="event-title">Campus Open Day</div>
+            <div class="event-date">December 15, 2024</div>
+            <div class="event-location">Main Campus</div>
+            <p>Join us for a comprehensive tour of our facilities and meet our faculty.</p>
+          </div>
+          <div class="event-card">
+            <div class="event-title">Student Orientation</div>
+            <div class="event-date">January 8, 2025</div>
+            <div class="event-location">Building A - Auditorium</div>
+            <p>Welcome session for new students with campus navigation and resources.</p>
+          </div>
+          <div class="event-card">
+            <div class="event-title">Research Symposium</div>
+            <div class="event-date">January 20, 2025</div>
+            <div class="event-location">Library Conference Hall</div>
+            <p>Annual presentation of student and faculty research projects.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports Panel (Students/Professors) -->
+      <div id="reportsPanel" class="panel-pane">
+        <div class="reports-panel">
+          <div class="reports-header">
+            <h3>Campus Reports</h3>
+            <div class="reports-filters">
+              <div class="filter-group">
+                <label for="reportStatusFilter">Status:</label>
+                <select id="reportStatusFilter">
+                  <option value="">All Statuses</option>
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="reportRoomFilter">Room:</label>
+                <select id="reportRoomFilter">
+                  <option value="">All Rooms</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="reports-table-container">
+            <table class="reports-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Room</th>
+                  <th>Issue</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 40px;">
+                    <p>No reports available. Create your first report using the "Report Issue" button.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Panel (Professors/Admin) -->
+      <div id="analyticsPanel" class="panel-pane">
+        <div class="analytics-panel">
+          <h3>Campus Analytics</h3>
+          <div class="analytics-overview">
+            <div class="analytics-cards">
+              <div class="analytics-card">
+                <h4>📊 Report Statistics</h4>
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span class="stat-number" id="totalReportsCount">0</span>
+                    <span class="stat-label">Total Reports</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-number" id="openReportsCount">0</span>
+                    <span class="stat-label">Open Issues</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-number" id="resolvedReportsCount">0</span>
+                    <span class="stat-label">Resolved</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- External Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -150,7 +306,12 @@
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
 
-  <!-- Your App -->
+  <!-- Room Management Scripts -->
+  <script src="../JS/roomData.js"></script>
+  <script src="../JS/roomManager.js"></script>
+  <script src="../JS/adminPanel.js"></script>
+  <script src="../JS/authSystem.js"></script>
+  <script src="../JS/layoutManager.js"></script>
   <script src="../JS/app.js"></script>
 </body>
 </html>

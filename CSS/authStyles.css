@@ -1,0 +1,381 @@
+/* authStyles.css - Authentication and User Role Styling */
+
+/* Authentication Modal */
+.auth-modal {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.auth-modal-content {
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: authModalSlideIn 0.3s ease-out;
+}
+
+@keyframes authModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-modal-header {
+  background: linear-gradient(135deg, #0055A4, #0066CC);
+  color: white;
+  padding: 20px;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.auth-close {
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.auth-close:hover {
+  opacity: 0.7;
+}
+
+.auth-modal-body {
+  padding: 30px;
+}
+
+/* Form Styling */
+.auth-form-group {
+  margin-bottom: 20px;
+}
+
+.auth-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.auth-form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+}
+
+.auth-form-group input:focus {
+  outline: none;
+  border-color: #0055A4;
+  box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
+}
+
+.auth-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.auth-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.auth-btn-primary {
+  background: linear-gradient(135deg, #0055A4, #0066CC);
+  color: white;
+}
+
+.auth-btn-primary:hover {
+  background: linear-gradient(135deg, #004494, #0055BB);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
+}
+
+.auth-btn-secondary {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e1e5e9;
+}
+
+.auth-btn-secondary:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+/* Demo Accounts Info */
+.auth-demo-accounts {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #0055A4;
+}
+
+.auth-demo-accounts h4 {
+  margin: 0 0 12px 0;
+  color: #0055A4;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.auth-demo-accounts p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.auth-demo-accounts strong {
+  color: #333;
+}
+
+/* User Info Section */
+.user-info-section {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  border-radius: 12px;
+  border: 2px solid #0055A4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+  min-width: 200px;
+}
+
+.user-info-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0055A4, #0066CC);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.user-details h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.user-details p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.user-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.user-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-btn-logout {
+  background: #dc3545;
+  color: white;
+}
+
+.user-btn-logout:hover {
+  background: #c82333;
+}
+
+.user-btn-profile {
+  background: #6c757d;
+  color: white;
+}
+
+.user-btn-profile:hover {
+  background: #5a6268;
+}
+
+/* Login Section */
+.login-section {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  border-radius: 12px;
+  border: 2px solid #0055A4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+}
+
+.login-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+}
+
+.login-text {
+  flex: 1;
+}
+
+.login-text h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.login-text p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.login-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #0055A4, #0066CC);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, #004494, #0055BB);
+  transform: translateY(-1px);
+}
+
+/* Role-based styling */
+.role-general-public {
+  border-left: 4px solid #6c757d;
+}
+
+.role-student {
+  border-left: 4px solid #28a745;
+}
+
+.role-professor {
+  border-left: 4px solid #ffc107;
+}
+
+.role-admin {
+  border-left: 4px solid #dc3545;
+}
+
+/* Permission indicators */
+.permission-indicator {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.permission-view {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.permission-create {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.permission-manage {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.permission-admin {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .user-info-section,
+  .login-section {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 10px;
+    width: calc(100% - 20px);
+  }
+
+  .auth-modal-content {
+    margin: 5% auto;
+    width: 95%;
+  }
+
+  .auth-form-actions {
+    flex-direction: column;
+  }
+
+  .user-actions {
+    flex-direction: column;
+  }
+}

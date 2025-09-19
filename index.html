@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Campus Map</title>
+    <title>UTTOP Smart Campus Map</title>
     <style>
         body {
             background: #f4f4f9;
@@ -66,13 +66,13 @@
             }
         }
     </style>
-    <link rel="manifest" href="../manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0055A4">
     <link rel="icon" href="../IMG/icons/icon-192x192.png">
 </head>
 <script>
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("../service-worker.js", { scope: './' })
+    navigator.serviceWorker.register("service-worker.js", { scope: './' })
       .then(reg => console.log("Service Worker registrado", reg))
       .catch(err => console.error("SW error", err));
   }
@@ -80,11 +80,11 @@
 
 <body>
     <header>
-        Campus Map</header>
+        UTTOP Smart Campus</header>
     <main>
-        <h1>Welcome to Campus Map</h1>
-        <p>This is the index page for the Campus Map project.</p>
-        <a href="../HTML/Prueba9.html" class="button">Go to Campus Map Page</a>
+        <h1>Welcome to UTTOP Smart Campus</h1>
+        <p>This is the index page for the UTTOP Smart Campus project.</p>
+        <a href="../HTML/Prueba9.html" class="button">Go to UTTOP Smart Campus Map Page</a>
     </main>
 </body>
 </html>

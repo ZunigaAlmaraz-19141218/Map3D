@@ -1,12 +1,12 @@
 // service-worker.js
 const CACHE_NAME = "campus-cache-v1";
 const STATIC_ASSETS = [
-  "./",
-  "./index.html",
-  "./Prueba9.html",
-  "./JS/app.js",
-  "./CSS/styles.css",
-  "./manifest.json",
+  "/",
+  "/index.html",
+  "/Prueba9.html",
+  "/JS/app.js",
+  "/CSS/styles.css",
+  "/manifest.json",
   // Librerías externas (Leaflet, MapLibre, etc.)
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",

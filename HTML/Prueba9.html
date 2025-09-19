@@ -39,16 +39,16 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"
   />
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#0055A4">
-  <link rel="icon" href="/IMG/icons/icon-192x192.png">
+  <link rel="icon" href="../IMG/icons/icon-192x192.png">
 
   <!-- Your custom CSS -->
-  <link rel="stylesheet" href="/CSS/styles.css">
+  <link rel="stylesheet" href="../CSS/styles.css">
 </head>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js", { scope: '/' })
+      navigator.serviceWorker.register("../service-worker.js", { scope: './' })
         .then(reg => console.log("Service Worker registrado", reg))
         .catch(err => console.error("SW error", err));
     }
@@ -162,6 +162,6 @@
   <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
 
   <!-- Your App -->
-  <script src="/JS/app.js"></script>
+  <script src="../JS/app.js"></script>
 </body>
 </html>

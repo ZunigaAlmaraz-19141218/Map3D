@@ -66,13 +66,13 @@
             }
         }
     </style>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#0055A4">
-    <link rel="icon" href="IMG/icons/icon-192x192.png">
+    <link rel="icon" href="../IMG/icons/icon-192x192.png">
 </head>
 <script>
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js", { scope: '/' })
+    navigator.serviceWorker.register("../service-worker.js", { scope: './' })
       .then(reg => console.log("Service Worker registrado", reg))
       .catch(err => console.error("SW error", err));
   }
@@ -84,7 +84,7 @@
     <main>
         <h1>Welcome to Campus Map</h1>
         <p>This is the index page for the Campus Map project.</p>
-        <a href="HTML/Prueba9.html" class="button">Go to Campus Map Page</a>
+        <a href="../HTML/Prueba9.html" class="button">Go to Campus Map Page</a>
     </main>
 </body>
 </html>

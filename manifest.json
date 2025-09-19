@@ -1,6 +1,6 @@
 {
-  "name": "UTTOP Digital Twin",
-  "short_name": "CampusNav",
+  "name": "UTTOP Smart Campus",
+  "short_name": "SmartCampus",
   "id": "/index.html",
   "start_url": "index.html",
   "display": "standalone",

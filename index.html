@@ -2,115 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UTTOP Smart Campus Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
+    <title>UTOP Campus Digital Twin</title>
+    <meta name="description" content="Interactive 2D/3D digital twin of UTOP Campus with real-time navigation, GPS tracking, and location-based services">
     <meta name="theme-color" content="#0055A4">
-    <link rel="icon" href="../IMG/icons/icon-192x192.png">
-    <style>
-        /* Reset & Base */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #f4f4f9, #e2e2f1);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            align-items: center;
-        }
-
-        header {
-            background: #3a3a60;
-            color: #fff;
-            width: 100%;
-            padding: 1.5rem 0;
-            text-align: center;
-            font-size: 2rem;
-            letter-spacing: 2px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        main {
-            background: #fff;
-            padding: 2rem 3rem;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            margin-top: 2rem;
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-            transition: transform 0.3s;
-        }
-        main:hover {
-            transform: translateY(-5px);
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: #3a3a60;
-            margin-bottom: 1rem;
-        }
-
-        p {
-            font-size: 1.2rem;
-            color: #555;
-            margin-bottom: 2rem;
-        }
-
-        a.button {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: #3a3a60;
-            color: #fff;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        a.button:hover {
-            background: #57578a;
-            transform: scale(1.05);
-        }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 1.8rem; }
-            main { padding: 1.5rem 2rem; }
-        }
-    </style>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="IMG/icons/icon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="IMG/icons/icon-192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="CSS/styles.css" as="style">
+    <link rel="preload" href="JS/app.js" as="script">
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Load styles -->
+    <link rel="stylesheet" href="CSS/styles.css">
 </head>
 
 <body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <header>
-        UTTOP Smart Campus
+        <div class="header-content">
+            <a href="/" class="logo">
+                <span>UTOP Campus Digital Twin</span>
+            </a>
+            <div class="logo">UTTOP Smart Campus</div>
+        </div>
     </header>
 
     <main>
-        <h1 id="greeting">Welcome to UTTOP Smart Campus</h1>
-        <p>This is the index page for the UTTOP Smart Campus project.</p>
-        <a href="HTML/Prueba9.html" class="button">Go to UTTOP Smart Campus Map Page</a>
+        <section class="hero">
+            <h1 id="greeting">Welcome to UTTOP Smart Campus</h1>
+            <p class="subtitle">Navigate through the campus with our interactive 2D/3D map, find your way to any building, and discover points of interest.</p>
+            <div class="cta-container">
+                <a href="HTML/Prueba9.html" class="button">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Open Campus Map
+                </a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                </div>
+                <h3>Interactive Maps</h3>
+                <p>Switch seamlessly between 2D and 3D views of the campus to better understand your surroundings.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <h3>Real-time Navigation</h3>
+                <p>Get turn-by-turn directions to any building or room on campus with our intuitive routing system.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                </div>
+                <h3>Accessibility</h3>
+                <p>Accessible design with screen reader support and high contrast modes for all users.</p>
+            </div>
+        </section>
     </main>
 
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>UTOP Campus Digital Twin</h3>
+                <p>Interactive 2D/3D navigation and information system for UTOP Campus</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="HTML/Prueba9.html" class="footer-link">Interactive Map</a></li>
+                    <li><a href="#features" class="footer-link">Features</a></li>
+                    <li><a href="#about" class="footer-link">About</a></li>
+                    <li><a href="#contact" class="footer-link">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>GPS Features</h4>
+                <ul>
+                    <li>Real-time Location Tracking</li>
+                    <li>Manual GPS Correction</li>
+                    <li>Indoor/Outdoor Navigation</li>
+                    <li>Accessibility Features</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2023 UTOP Campus. All rights reserved. | 
+               <a href="#privacy" class="footer-link">Privacy Policy</a> | 
+               <a href="#terms" class="footer-link">Terms of Service</a>
+            </p>
+        </div>
+    </footer>
+
     <script>
-        // Service Worker
+        // Service Worker Registration
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js", { scope: './' })
-                .then(reg => console.log("Service Worker registrado", reg))
-                .catch(err => console.error("SW error", err));
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("service-worker.js", { scope: './' })
+                    .then(reg => console.log("Service Worker registered successfully", reg))
+                    .catch(err => console.error("Service Worker registration failed:", err));
+            });
         }
 
-        // Saludo personalizado
-        let userName = localStorage.getItem('userName');
-        if(!userName) {
-            userName = prompt("Hi! What's your name?");
-            if(userName) localStorage.setItem('userName', userName);
-        }
+        // Dynamic Greeting
+        document.addEventListener('DOMContentLoaded', () => {
+            const greeting = document.getElementById('greeting');
+            const hour = new Date().getHours();
+            let timeGreeting = '';
+            
+            if (hour < 12) timeGreeting = 'Good morning';
+            else if (hour < 18) timeGreeting = 'Good afternoon';
+            else timeGreeting = 'Good evening';
+            
+            greeting.innerHTML = `${timeGreeting}, welcome to <span class="highlight">UTTOP Smart Campus</span>`;
+        });
 
-        if(userName) {
-            document.getElementById('greeting').textContent = `Hello, ${userName}! Welcome to UTTOP Smart Campus`;
-        }
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
     </script>
 </body>
 </html>

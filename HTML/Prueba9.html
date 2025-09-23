@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>UTTOP Campus Navigation</title>
+  <meta name="description" content="UTOP Campus Digital Twin - Interactive 2D/3D Navigation">
+  <title>UTOP Campus Digital Twin</title>
   <link rel="icon" href="data:,">
 
   <!-- Leaflet + Plugins CSS -->
@@ -48,9 +49,11 @@
 </head>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("../service-worker.js", { scope: '../' })
-        .then(reg => console.log("Service Worker registrado", reg))
-        .catch(err => console.error("SW error", err));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/Map3D/service-worker.js', { scope: '/Map3D/' })
+          .then(reg => console.log("Service Worker registered", reg))
+          .catch(err => console.error("Service Worker registration failed:", err));
+      });
     }
   </script>
 
@@ -67,16 +70,19 @@
       <li><button id="btnStartGPS-mobile" class="menu-btn"><span class="icon-btn icon-gps"></span>Start GPS</button></li>
       <li><button id="btnFollow-mobile" class="menu-btn"><span class="icon-btn icon-center"></span>Center</button></li>
 
-      <div class="menu-label">Route</div>
+      <div class="menu-label">Route Planning</div>
       <li><select id="mobile-origin"></select></li>
       <li><select id="mobile-destination"></select></li>
       <li><button id="btnGo-mobile" class="menu-btn"><span class="icon-btn icon-go"></span>Go</button></li>
 
-      <div class="menu-label">Actions</div>
+      <div class="menu-label">Tools & Actions</div>
+      <!-- Temporarily disabled: Navigate to Marker functionality
       <li><button id="btnNavMarker-mobile" class="menu-btn"><span class="icon-btn icon-nav"></span>Navigate to Marker</button></li>
+      -->
       <li><button id="btnAddInfo-mobile" class="menu-btn"><span class="icon-btn icon-add"></span>Add Information</button></li>
       <li><button id="btnViewInfos-mobile" class="menu-btn"><span class="icon-btn icon-view"></span>View Information</button></li>
       <li><button id="btnShare-mobile" class="menu-btn"><span class="icon-btn icon-share"></span>Share</button></li>
+      <li><button id="btnManualGPS-mobile" class="menu-btn">Manual GPS: OFF</button></li>
     </ul>
   </nav>
 
@@ -85,6 +91,10 @@
     <button id="btn2D" class="control-btn" title="2D View"><span class="icon-btn icon-2d"></span></button>
     <button id="btn3D" class="control-btn" title="3D View"><span class="icon-btn icon-3d"></span></button>
     <button id="btnStartGPS" class="control-btn" title="Start GPS"><span class="icon-btn icon-gps"></span></button>
+    <button id="btnManualGPS" class="control-btn" title="Enable manual GPS correction">Manual GPS: OFF</button>
+    <div id="gpsCoordinates" class="coordinates-display" title="Current GPS Coordinates">
+      <span id="gpsLat">Lat: -</span>, <span id="gpsLng">Lng: -</span>
+    </div>
     <button id="btnFollow" class="control-btn" title="Center"><span class="icon-btn icon-center"></span></button>
 
     <input
@@ -102,7 +112,9 @@
     </select>
 
     <button id="btnGo" class="control-btn" title="Go"><span class="icon-btn icon-go"></span></button>
+    <!-- Temporarily disabled: Navigate to Marker functionality
     <button id="btnNavMarker" class="control-btn" title="Navigate to Marker"><span class="icon-btn icon-nav"></span></button>
+    -->
     <button id="btnAddInfo" class="control-btn" title="Add Information"><span class="icon-btn icon-add"></span></button>
     <button id="btnViewInfos" class="control-btn" title="View Information"><span class="icon-btn icon-view"></span></button>
     <button id="btnShare" class="control-btn" title="Share"><span class="icon-btn icon-share"></span></button>
@@ -149,7 +161,20 @@
   <div id="map3D" role="region" aria-label="3D map"></div>
 
   <!-- GPS Status Panel -->
-  <div id="info" role="status"></div>
+  <div id="info" role="status" class="gps-status">
+    <div class="status-line">
+      <span class="status-icon" id="gpsStatusIcon">🛰️</span>
+      <span id="gpsStatusText">GPS: Waiting for signal</span>
+    </div>
+    <div class="status-line">
+      <span class="status-icon">📡</span>
+      <span id="gpsAccuracy">Accuracy: -</span>
+    </div>
+    <div class="status-line">
+      <span class="status-icon">📍</span>
+      <span id="gpsPosition">Position: -</span>
+    </div>
+  </div>
 
   <!-- External Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

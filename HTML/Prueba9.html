@@ -5,188 +5,180 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <meta name="description" content="UTOP Campus Digital Twin - Interactive 2D/3D Navigation">
   <title>UTOP Campus Digital Twin</title>
-  <link rel="icon" href="data:,">
-
-  <!-- Leaflet + Plugins CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"
-  />
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#0055A4">
   <link rel="icon" href="../IMG/icons/icon-192x192.png">
 
-  <!-- Your custom CSS -->
-  <link rel="stylesheet" href="../CSS/styles.css">
-</head>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/Map3D/service-worker.js', { scope: '/Map3D/' })
-          .then(reg => console.log("Service Worker registered", reg))
-          .catch(err => console.error("Service Worker registration failed:", err));
-      });
-    }
-  </script>
+  <!-- Leaflet + Plugins CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"/>
 
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../CSS/styles.css">
+  <link rel="stylesheet" href="../CSS/mobile-menu.css">
+  
+  <!-- Mapbox GL JS -->
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+</head>
 <body>
   <!-- Mobile Menu -->
   <nav class="mobile-menu" aria-label="Main menu">
-    <button class="menu-toggle" aria-label="Open menu" title="Open menu">☰</button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-list">
+      <span class="menu-icon">☰</span>
+      <span class="sr-only">Menu</span>
+    </button>
     <div class="menu-overlay"></div>
-    <ul class="menu-list" tabindex="-1">
-      <button class="menu-close" aria-label="Close menu" title="Close menu">×</button>
-      <div class="menu-label">Navigation</div>
-      <li><button id="btn2D-mobile" class="menu-btn"><span class="icon-btn icon-2d"></span>2D View</button></li>
-      <li><button id="btn3D-mobile" class="menu-btn"><span class="icon-btn icon-3d"></span>3D View</button></li>
-      <li><button id="btnStartGPS-mobile" class="menu-btn"><span class="icon-btn icon-gps"></span>Start GPS</button></li>
-      <li><button id="btnFollow-mobile" class="menu-btn"><span class="icon-btn icon-center"></span>Center</button></li>
+    <div class="menu-list" id="mobile-menu-list">
+      <button class="menu-close" aria-label="Close menu">
+        <span aria-hidden="true">×</span>
+        <span class="sr-only">Close menu</span>
+      </button>
+      
+      <div class="menu-section">
+        <span class="menu-label">Navigation</span>
+        <ul class="menu-items">
+          <li><button id="btn2D-mobile" class="menu-btn" data-view="2D">
+            <span class="menu-icon">🗺️</span>
+            <span>2D View</span>
+          </button></li>
+          <li><button id="btn3D-mobile" class="menu-btn" data-view="3D">
+            <span class="menu-icon">🌐</span>
+            <span>3D View</span>
+          </button></li>
+          <li><button id="btnShareRoute-mobile" class="menu-btn">
+            <span class="menu-icon">🔗</span>
+            <span>Share Route</span>
+          </button></li>
+          <li><button id="btnStartGPS-mobile" class="menu-btn">
+            <span class="menu-icon">📍</span>
+            <span>Start GPS</span>
+          </button></li>
+          <li><button id="btnManualGPS-mobile" class="menu-btn">
+            <span class="menu-icon">✋</span>
+            <span>Manual GPS: OFF</span>
+          </button></li>
+        </ul>
+      </div>
 
-      <div class="menu-label">Route Planning</div>
-      <li><select id="mobile-origin"></select></li>
-      <li><select id="mobile-destination"></select></li>
-      <li><button id="btnGo-mobile" class="menu-btn"><span class="icon-btn icon-go"></span>Go</button></li>
+      <div class="menu-section">
+        <span class="menu-label">Route Planning</span>
+        <ul class="menu-items">
+          <li class="menu-select">
+            <label for="mobile-origin" class="sr-only">Origin</label>
+            <select id="mobile-origin" class="menu-select-input">
+              <option value="">Select origin</option>
+            </select>
+          </li>
+          <li class="menu-select">
+            <label for="mobile-destination" class="sr-only">Destination</label>
+            <select id="mobile-destination" class="menu-select-input">
+              <option value="">Select destination</option>
+            </select>
+          </li>
+          <li><button id="btnGo-mobile" class="menu-btn menu-btn-primary">
+            <span class="menu-icon">🚀</span>
+            <span>Find Route</span>
+          </button></li>
+        </ul>
+      </div>
 
-      <div class="menu-label">Tools & Actions</div>
-      <!-- Temporarily disabled: Navigate to Marker functionality
-      <li><button id="btnNavMarker-mobile" class="menu-btn"><span class="icon-btn icon-nav"></span>Navigate to Marker</button></li>
-      -->
-      <li><button id="btnAddInfo-mobile" class="menu-btn"><span class="icon-btn icon-add"></span>Add Information</button></li>
-      <li><button id="btnViewInfos-mobile" class="menu-btn"><span class="icon-btn icon-view"></span>View Information</button></li>
-      <li><button id="btnShare-mobile" class="menu-btn"><span class="icon-btn icon-share"></span>Share</button></li>
-      <li><button id="btnManualGPS-mobile" class="menu-btn">Manual GPS: OFF</button></li>
-    </ul>
+      <div class="menu-section">
+        <span class="menu-label">Information</span>
+        <ul class="menu-items">
+          <li><button id="btnAddInfo-mobile" class="menu-btn">
+            <span class="menu-icon">➕</span>
+            <span>Add Information</span>
+          </button></li>
+          <li><button id="btnViewInfos-mobile" class="menu-btn">
+            <span class="menu-icon">ℹ️</span>
+            <span>View Information</span>
+          </button></li>
+        </ul>
+      </div>
+    </div>
   </nav>
 
   <!-- Desktop Controls -->
   <div id="controls" role="region" aria-label="Map controls">
-    <button id="btn2D" class="control-btn" title="2D View"><span class="icon-btn icon-2d"></span></button>
-    <button id="btn3D" class="control-btn" title="3D View"><span class="icon-btn icon-3d"></span></button>
-    <button id="btnStartGPS" class="control-btn" title="Start GPS"><span class="icon-btn icon-gps"></span></button>
-    <button id="btnManualGPS" class="control-btn" title="Enable manual GPS correction">Manual GPS: OFF</button>
-    <div id="gpsCoordinates" class="coordinates-display" title="Current GPS Coordinates">
-      <span id="gpsLat">Lat: -</span>, <span id="gpsLng">Lng: -</span>
-    </div>
-    <button id="btnFollow" class="control-btn" title="Center"><span class="icon-btn icon-center"></span></button>
-
-    <input
-      id="searchBox"
-      type="text"
-      placeholder="Filter places…"
-      aria-label="Filter places"
-    />
-
-    <select id="origin" aria-label="Select origin">
-      <option value="">-- select --</option>
-    </select>
-    <select id="destination" aria-label="Select destination">
-      <option value="">-- select --</option>
-    </select>
-
-    <button id="btnGo" class="control-btn" title="Go"><span class="icon-btn icon-go"></span></button>
-    <!-- Temporarily disabled: Navigate to Marker functionality
-    <button id="btnNavMarker" class="control-btn" title="Navigate to Marker"><span class="icon-btn icon-nav"></span></button>
-    -->
-    <button id="btnAddInfo" class="control-btn" title="Add Information"><span class="icon-btn icon-add"></span></button>
-    <button id="btnViewInfos" class="control-btn" title="View Information"><span class="icon-btn icon-view"></span></button>
-    <button id="btnShare" class="control-btn" title="Share"><span class="icon-btn icon-share"></span></button>
+    <button id="btn2D" class="control-btn" title="2D View">2D</button>
+    <button id="btn3D" class="control-btn" title="3D View">3D</button>
+    <button id="btnStartGPS" class="control-btn" title="Start GPS">Start GPS</button>
+    <button id="btnManualGPS" class="control-btn" title="Manual GPS correction">Manual GPS: OFF</button>
+    <select id="origin"></select>
+    <select id="destination"></select>
+    <button id="btnGo" class="control-btn" title="Go">Go</button>
+    <button id="btnAddInfo" class="control-btn" title="Add Information">Add Info</button>
+    <button id="btnViewInfos" class="control-btn" title="View Information">View Info</button>
   </div>
 
-  <!-- Alert Modal -->
-  <div id="alertModal" class="modal-overlay">
+  <!-- Map Containers -->
+  <div id="map-container">
+    <div id="map2D" class="map-view active"></div>
+    <div id="map3D" class="map-view"></div>
+  </div>
+
+  <!-- Add Info Modal -->
+  <div id="addInfoModal" class="modal" role="dialog" aria-modal="true">
     <div class="modal-content">
-      <button id="alert-close" class="modal-close" aria-label="Close alert">×</button>
-      <p id="alert-message"></p>
+      <span class="close-modal" role="button" aria-label="Close">&times;</span>
+      <h2>Add Information</h2>
+      <form id="addInfoForm">
+        <label for="infoTitle">Title:</label>
+        <input type="text" id="infoTitle" required>
+        
+        <label for="infoDescription">Description:</label>
+        <textarea id="infoDescription" required></textarea>
+        
+        <label for="infoType">Type:</label>
+        <select id="infoType" required>
+          <option value="info">Information</option>
+          <option value="warning">Warning</option>
+          <option value="danger">Danger</option>
+        </select>
+        
+        <label for="infoImage">Image (optional):</label>
+        <input type="file" id="infoImage" accept="image/*">
+        
+        <button type="submit">Save</button>
+      </form>
     </div>
   </div>
 
-  <!-- Add Information Modal -->
-  <div id="infoFormOverlay" class="modal-overlay"></div>
-  <div id="infoForm" class="modal-content info-modal">
-    <h2>Add Information</h2>
-    <button id="btnCancelInfo" class="modal-close" aria-label="Cancel">×</button>
-    <label for="infoTitle">Title:</label>
-    <input type="text" id="infoTitle" placeholder="Title…" />
-    <label for="infoDescription">Description:</label>
-    <textarea id="infoDescription" placeholder="Description…"></textarea>
-    <label for="infoMarkerType">Marker Type:</label>
-    <select id="infoMarkerType">
-      <option value="tree">Tree</option>
-      <option value="cross">Cross</option>
-    </select>
-    <label for="hiddenFileInput">Optional Photo:</label>
-    <input type="file" id="hiddenFileInput" accept="image/*" capture="environment" />
-    <img id="preview" class="info-image" alt="Preview" />
-    <button id="btnSaveInfo" class="modal-save">Save</button>
-  </div>
-
-  <!-- View Information Modal -->
-  <div id="infoModalOverlay" class="modal-overlay"></div>
-  <div id="infoListPanel" class="modal-content info-modal">
-    <h2>Saved Information</h2>
-    <button id="btnCloseInfoPanel" class="modal-close" aria-label="Close">×</button>
-    <div id="infoList" class="info-list"></div>
-  </div>
-
-  <!-- 2D & 3D Maps -->
-  <div id="map2D" role="region" aria-label="2D map"></div>
-  <div id="map3D" role="region" aria-label="3D map"></div>
-
-  <!-- GPS Status Panel -->
-  <div id="info" role="status" class="gps-status">
-    <div class="status-line">
-      <span class="status-icon" id="gpsStatusIcon">🛰️</span>
-      <span id="gpsStatusText">GPS: Waiting for signal</span>
-    </div>
-    <div class="status-line">
-      <span class="status-icon">📡</span>
-      <span id="gpsAccuracy">Accuracy: -</span>
-    </div>
-    <div class="status-line">
-      <span class="status-icon">📍</span>
-      <span id="gpsPosition">Position: -</span>
+  <!-- Info List Modal -->
+  <div id="infoListModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <span class="close-modal" role="button" aria-label="Close">&times;</span>
+      <h2>Saved Information</h2>
+      <div id="infoList"></div>
     </div>
   </div>
 
-  <!-- External Scripts -->
+  <!-- Enhanced Coordinates Display -->
+  <div id="coordinates-display" class="coordinates-display">
+    <div id="gpsLat">Lat: -</div>
+    <div id="gpsLng">Lng: -</div>
+    <button id="copyCoords" class="copy-btn" title="Copy coordinates">📋</button>
+    <button id="centerOnGPS" class="gps-btn" title="Center on GPS">📍</button>
+  </div>
+  
+  <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
-  <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script src="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
 
-  <!-- Your App -->
+  <!-- Mobile Menu -->
+  <script src="../JS/mobile-menu.js"></script>
+  
+  <!-- App -->
   <script src="../JS/app.js"></script>
 </body>
 </html>

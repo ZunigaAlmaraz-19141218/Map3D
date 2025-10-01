@@ -247,7 +247,7 @@ wss.on('connection', (ws) => {
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
-  console.log(`Open http://localhost:${PORT}/HTML/Prueba9.html in your browser`);
+  console.log(`Open http://localhost:${PORT}/HTML/uttop-map.html in your browser`);
   console.log(`WebSocket server running on ws://localhost:${PORT}`);
 });
 

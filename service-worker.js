@@ -1,6 +1,6 @@
 // service-worker.js
 const CACHE_NAME = 'campus-cache-v3';
-const OFFLINE_URL = '/Map3D/HTML/Prueba9.html';
+const OFFLINE_URL = '/Map3D/HTML/uttop-map.html';
 
 // Install event - cache core assets
 self.addEventListener('install', event => {
